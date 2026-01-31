@@ -1,4 +1,4 @@
-name: Generate and Publish Tech Posts
+name: Publish Tech Posts to Medium
 
 on:
   schedule:
@@ -8,10 +8,9 @@ on:
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
-  generate-and-publish:
+  publish-to-medium:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -27,133 +26,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install openai requests markdown2
-
-      - name: Generate tech posts
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          MEDIUM_API_TOKEN: ${{ secrets.MEDIUM_API_TOKEN }}
-        run: |
-          python3 << 'PYTHON_SCRIPT'
-          import os
-          import json
-          import glob
-          import re
-          from datetime import datetime
-          import requests
-
-          # Check for required environment variables
-          openai_key = os.environ.get('OPENAI_API_KEY')
-          medium_token = os.environ.get('MEDIUM_API_TOKEN')
-
-          if not openai_key:
-              print("Warning: OPENAI_API_KEY not set. Skipping AI generation.")
-              exit(0)
-
-          if not medium_token:
-              print("Warning: MEDIUM_API_TOKEN not set. Skipping Medium publishing.")
-              exit(0)
-
-          # Import OpenAI after checking for API key
-          try:
-              from openai import OpenAI
-              client = OpenAI(api_key=openai_key)
-          except ImportError:
-              print("OpenAI library not available")
-              exit(1)
-
-          # Find pending issues
-          issue_files = glob.glob('issues/issue-*.md')
-          pending_issues = []
-
-          for issue_file in issue_files:
-              with open(issue_file, 'r') as f:
-                  content = f.read()
-                  if 'status: pending' in content:
-                      pending_issues.append(issue_file)
-
-          if not pending_issues:
-              print("No pending issues to process")
-              exit(0)
-
-          print(f"Found {len(pending_issues)} pending issue(s)")
-
-          # Process each pending issue
-          for issue_file in pending_issues:
-              print(f"\nProcessing {issue_file}...")
-              
-              with open(issue_file, 'r') as f:
-                  content = f.read()
-
-              # Extract metadata
-              match = re.search(r'issue_number: (\d+)', content)
-              issue_number = match.group(1) if match else 'unknown'
-              
-              match = re.search(r'title: "(.*?)"', content)
-              title = match.group(1) if match else 'Untitled'
-
-              # Generate tech post using OpenAI
-              prompt = f"""You are a technical writer. Based on the following issue, create a comprehensive, well-structured technical blog post suitable for Medium.
-
-          Issue Content:
-          {content}
-
-          Please write a detailed technical post that:
-          1. Has an engaging title
-          2. Includes an introduction
-          3. Explains the technical problem or topic
-          4. Provides solutions, code examples, or insights
-          5. Includes a conclusion
-          6. Is formatted in Markdown
-
-          Make it informative and professional."""
-
-              try:
-                  response = client.chat.completions.create(
-                      model="gpt-4",
-                      messages=[
-                          {"role": "system", "content": "You are a technical writer who creates engaging blog posts."},
-                          {"role": "user", "content": prompt}
-                      ],
-                      max_tokens=2000,
-                      temperature=0.7
-                  )
-                  
-                  tech_post = response.choices[0].message.content
-                  
-                  # Save the generated post
-                  post_filename = f"posts/post-{issue_number}-{datetime.now().strftime('%Y%m%d')}.md"
-                  os.makedirs('posts', exist_ok=True)
-                  
-                  with open(post_filename, 'w') as f:
-                      f.write(f"---\n")
-                      f.write(f"issue_number: {issue_number}\n")
-                      f.write(f"original_title: {title}\n")
-                      f.write(f"generated_at: {datetime.now().isoformat()}\n")
-                      f.write(f"status: generated\n")
-                      f.write(f"---\n\n")
-                      f.write(tech_post)
-                  
-                  print(f"Generated post: {post_filename}")
-                  
-                  # Update issue status - use regex to only replace in frontmatter
-                  import re
-                  updated_content = re.sub(
-                      r'^status:\s*pending\s*$',
-                      'status: generated',
-                      content,
-                      count=1,
-                      flags=re.MULTILINE
-                  )
-                  with open(issue_file, 'w') as f:
-                      f.write(updated_content)
-                  
-              except Exception as e:
-                  print(f"Error generating post for {issue_file}: {e}")
-                  continue
-
-          print("\nTech post generation completed")
-          PYTHON_SCRIPT
+          pip install requests
 
       - name: Publish to Medium
         env:
@@ -268,7 +141,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add issues/ posts/
-          git commit -m "Update tech posts and issue statuses" || echo "No changes to commit"
+          git add posts/
+          git commit -m "Update published post statuses" || echo "No changes to commit"
           # Push to main branch explicitly
           git push origin main
