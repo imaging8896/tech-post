@@ -133,8 +133,15 @@ jobs:
                   
                   print(f"Generated post: {post_filename}")
                   
-                  # Update issue status
-                  updated_content = content.replace('status: pending', 'status: generated')
+                  # Update issue status - use regex to only replace in frontmatter
+                  import re
+                  updated_content = re.sub(
+                      r'^status:\s*pending\s*$',
+                      'status: generated',
+                      content,
+                      count=1,
+                      flags=re.MULTILINE
+                  )
                   with open(issue_file, 'w') as f:
                       f.write(updated_content)
                   
@@ -233,8 +240,15 @@ jobs:
                   post_url = result['data']['url']
                   print(f"Published successfully: {post_url}")
                   
-                  # Update post status
-                  updated_content = content.replace('status: generated', f'status: published\npublished_url: {post_url}')
+                  # Update post status - use regex to only replace in frontmatter
+                  import re
+                  updated_content = re.sub(
+                      r'^status:\s*generated\s*$',
+                      f'status: published\npublished_url: {post_url}',
+                      content,
+                      count=1,
+                      flags=re.MULTILINE
+                  )
                   with open(post_file, 'w') as f:
                       f.write(updated_content)
                   
