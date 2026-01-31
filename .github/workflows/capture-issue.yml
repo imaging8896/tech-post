@@ -43,37 +43,31 @@ jobs:
             echo "authorized=true" >> $GITHUB_OUTPUT
           else
             echo "✗ Author is NOT authorized for AI generation"
-            echo "⚠️  AI post generation will be skipped to save API tokens"
+            echo "⚠️  Issue will NOT be saved to the repository to save API tokens"
+            echo "⚠️  Only issues from authorized users are committed"
             echo "authorized=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Save issue to file
+        if: steps.check_author.outputs.authorized == 'true'
         env:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
           ISSUE_CREATED_AT: ${{ github.event.issue.created_at }}
-          AUTHORIZED: ${{ steps.check_author.outputs.authorized }}
         run: |
           # Create issue directory
           mkdir -p issues
           
-          # Determine status based on authorization
-          if [ "$AUTHORIZED" = "true" ]; then
-            STATUS="pending"
-          else
-            STATUS="skipped"
-          fi
-          
-          # Save issue as markdown
+          # Save issue as markdown with status "pending"
           cat > "issues/issue-${ISSUE_NUMBER}.md" << 'ISSUE_EOF'
           ---
           issue_number: ${{ github.event.issue.number }}
           title: "${{ github.event.issue.title }}"
           author: ${{ github.event.issue.user.login }}
           created_at: ${{ github.event.issue.created_at }}
-          status: STATUS_PLACEHOLDER
+          status: pending
           ---
 
           # ${{ github.event.issue.title }}
@@ -86,13 +80,6 @@ jobs:
 
           ${{ github.event.issue.body }}
           ISSUE_EOF
-          
-          # Replace status placeholder with actual value
-          sed -i "s/STATUS_PLACEHOLDER/${STATUS}/" "issues/issue-${ISSUE_NUMBER}.md"
-          
-          if [ "$AUTHORIZED" = "false" ]; then
-            echo "⚠️  Issue saved with status 'skipped' - AI generation disabled for this author"
-          fi
 
       - name: Set up Python
         if: steps.check_author.outputs.authorized == 'true'
@@ -231,21 +218,15 @@ jobs:
           PYTHON_SCRIPT
 
       - name: Commit and push changes
+        if: steps.check_author.outputs.authorized == 'true'
         env:
-          AUTHORIZED: ${{ steps.check_author.outputs.authorized }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add issues/ posts/
-          
-          if [ "$AUTHORIZED" = "true" ]; then
-            git commit -m "Add issue #${ISSUE_NUMBER} and AI-generated post: ${ISSUE_TITLE}" || echo "No changes to commit"
-          else
-            git commit -m "Add issue #${ISSUE_NUMBER} (AI generation skipped - unauthorized author: ${ISSUE_AUTHOR}): ${ISSUE_TITLE}" || echo "No changes to commit"
-          fi
+          git commit -m "Add issue #${ISSUE_NUMBER} and AI-generated post: ${ISSUE_TITLE}" || echo "No changes to commit"
           
           # Push to main branch explicitly
           git push origin main
