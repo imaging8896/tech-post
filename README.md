@@ -27,10 +27,10 @@ When you create a new issue in this repository:
 - The issue is automatically saved to the `issues/` directory as a markdown file
 - The file includes metadata (issue number, title, author, timestamp)
 - **Authorization check**: The workflow verifies if the issue author is authorized
-  - ✅ **Authorized users**: AI-generated blog post is created immediately using OpenAI GPT-4
-  - ❌ **Unauthorized users**: Issue is saved with status "skipped" - no AI tokens consumed
+  - ✅ **Authorized users**: Issue is saved and AI-generated blog post is created immediately using OpenAI GPT-4
+  - ❌ **Unauthorized users**: Issue is NOT saved to the repository - no files committed, no AI tokens consumed
 - For authorized users, both the issue and generated post are committed to the repository together
-- The issue status is updated to "generated" (authorized) or "skipped" (unauthorized)
+- The issue status is updated to "generated"
 - Generated posts are saved to the `posts/` directory
 
 ### 2. Daily Medium Publication Workflow
@@ -79,8 +79,8 @@ This prevents waste of OpenAI API tokens from unauthorized issue creators.
 
 **How it works:**
 - When an issue is created, the workflow checks if the author is authorized
-- ✅ **Authorized**: AI post generated immediately (costs ~$0.05-$0.15 in tokens)
-- ❌ **Unauthorized**: Issue saved with status "skipped", no tokens used
+- ✅ **Authorized**: Issue saved and AI post generated immediately (costs ~$0.05-$0.15 in tokens)
+- ❌ **Unauthorized**: Issue NOT saved to repository, no files committed, no tokens used
 
 **To authorize additional users:**
 1. Go to Settings → Secrets and variables → Actions
@@ -174,15 +174,17 @@ tech-post/
 - **Trigger**: When an issue is opened or edited
 - **Actions**:
   1. **Check author authorization** - Verifies if issue author is authorized
-  2. Saves issue content to `issues/issue-{number}.md`
-  3. **If authorized**: 
+  2. **If authorized**: 
+     - Saves issue content to `issues/issue-{number}.md`
      - Immediately generates AI blog post using OpenAI GPT-4
      - Saves generated post to `posts/post-{number}-{date}.md`
      - Updates issue status to "generated"
-  4. **If unauthorized**:
-     - Skips AI generation (saves tokens!)
-     - Updates issue status to "skipped"
-  5. Commits and pushes changes
+     - Commits and pushes both files
+  3. **If unauthorized**:
+     - Does NOT save issue to repository
+     - Does NOT generate AI post (saves tokens!)
+     - Does NOT commit anything
+     - Workflow completes without creating files
 
 **Authorization:** By default, only repository owner. Customize with `AUTHORIZED_USERS` secret.
 

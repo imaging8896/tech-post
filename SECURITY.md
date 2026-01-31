@@ -44,8 +44,8 @@ This critical security feature prevents:
 **How it works:**
 1. When an issue is created, the workflow checks the author's username
 2. Compares against authorized users list (defaults to repository owner)
-3. Only generates AI posts for authorized users
-4. Unauthorized issues are saved but marked as "skipped"
+3. **Authorized users**: Issue saved, AI post generated, files committed
+4. **Unauthorized users**: Nothing saved, nothing committed, workflow exits cleanly
 
 **Configuration:**
 ```yaml
