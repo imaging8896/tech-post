@@ -64,13 +64,13 @@ jobs:
           fi
           
           # Save issue as markdown
-          cat > "issues/issue-${ISSUE_NUMBER}.md" << EOF
+          cat > "issues/issue-${ISSUE_NUMBER}.md" << 'ISSUE_EOF'
           ---
           issue_number: ${{ github.event.issue.number }}
           title: "${{ github.event.issue.title }}"
           author: ${{ github.event.issue.user.login }}
           created_at: ${{ github.event.issue.created_at }}
-          status: ${STATUS}
+          status: STATUS_PLACEHOLDER
           ---
 
           # ${{ github.event.issue.title }}
@@ -82,7 +82,10 @@ jobs:
           ## Description
 
           ${{ github.event.issue.body }}
-          EOF
+          ISSUE_EOF
+          
+          # Replace status placeholder with actual value
+          sed -i "s/STATUS_PLACEHOLDER/${STATUS}/" "issues/issue-${ISSUE_NUMBER}.md"
           
           if [ "$AUTHORIZED" = "false" ]; then
             echo "⚠️  Issue saved with status 'skipped' - AI generation disabled for this author"
