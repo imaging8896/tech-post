@@ -2,6 +2,13 @@
 
 This repository automatically captures technical issues and publishes AI-generated tech posts to Medium.
 
+## 📚 Documentation
+
+- **[Quick Start Guide](QUICKSTART.md)** - Get up and running in 5 minutes
+- **[Configuration Guide](CONFIGURATION.md)** - Detailed setup and customization
+- **[Issue Templates](TEMPLATES.md)** - Examples and best practices for writing issues
+- **[Security Guide](SECURITY.md)** - Security best practices and considerations
+
 ## Overview
 
 This system enables you to:
