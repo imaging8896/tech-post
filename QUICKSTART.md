@@ -72,14 +72,20 @@ Get your automated tech blog up and running in 5 minutes!
 
 ## ✅ Verify Setup
 
-### Check Issue Capture (Immediate)
+### Check Issue Capture and AI Post Generation (Immediate)
 
 1. Go to **Actions** tab
-2. Look for "Capture Issue" workflow
+2. Look for "Capture Issue and Generate Post" workflow
 3. It should be running or completed ✓
-4. Check workflow logs for any errors
+4. Check workflow logs to see:
+   - ✓ Issue saved
+   - ✓ AI post generated with OpenAI
+   - ✓ Both committed to repository
+5. Go to your repository and check:
+   - `issues/` directory has your issue file
+   - `posts/` directory has the generated post
 
-### Test Post Generation (Manual - Don't wait for daily schedule)
+### Test Medium Publishing (Manual)
 
 1. Go to **Actions** tab
 2. Click **"Generate and Publish Tech Posts"** workflow
@@ -88,9 +94,7 @@ Get your automated tech blog up and running in 5 minutes!
 5. Click **"Run workflow"**
 6. Wait 1-2 minutes for completion
 7. Check workflow logs to see:
-   - ✓ Issue processed
-   - ✓ Post generated with OpenAI
-   - ✓ Published to Medium
+   - ✓ Post published to Medium
 
 ### Check Your Medium Account
 
@@ -111,9 +115,9 @@ Now that you're set up, here's your workflow:
 
 The system automatically:
 - Saves your issue
-- Processes it daily at 9 AM UTC
-- Generates a professional blog post
-- Publishes to Medium
+- **Immediately generates an AI-powered blog post**
+- Commits both to the repository
+- Publishes to Medium daily at 9 AM UTC
 - Updates you with the published URL
 
 ## 📱 Pro Tips

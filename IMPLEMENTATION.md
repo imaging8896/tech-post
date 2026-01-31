@@ -64,37 +64,42 @@ This pull request implements a complete automated system for capturing GitHub is
    ↓
 3. Issue saved to issues/ directory
    ↓
-4. Daily at 9 AM UTC (or manual trigger)
+4. AI post immediately generated via OpenAI GPT-4
    ↓
-5. publish-posts.yml workflow runs
+5. Post saved to posts/ directory
    ↓
-6. OpenAI generates blog post
+6. Both issue and post committed to repository
    ↓
-7. Post saved to posts/ directory
+7. Daily at 9 AM UTC (or manual trigger)
    ↓
-8. Published to Medium
+8. publish-posts.yml workflow runs
    ↓
-9. User receives published URL
+9. Generated posts published to Medium
+   ↓
+10. User receives published URL
 ```
 
 ### Technical Architecture
 
-**Issue Capture:**
+**Issue Capture and Immediate AI Generation:**
 - Event: `issues.opened` or `issues.edited`
-- Action: Save to `issues/issue-{number}.md`
+- Actions: 
+  1. Save to `issues/issue-{number}.md`
+  2. **Immediately generate AI post using OpenAI GPT-4**
+  3. Save post to `posts/post-{number}-{date}.md`
+  4. Commit both files to repository
 - Frontmatter: issue_number, title, author, created_at, status
 - Permissions: `contents: write`, `issues: read`
+- Status flow: pending → generated
 
-**Post Generation & Publishing:**
+**Medium Publishing:**
 - Schedule: Daily at 9 AM UTC (`cron: '0 9 * * *'`)
-- AI Model: OpenAI GPT-4
 - Processing: 
-  1. Find files with `status: pending`
-  2. Generate blog post via OpenAI API
-  3. Save to `posts/post-{number}-{date}.md`
-  4. Publish to Medium API
-  5. Update statuses using regex (safe frontmatter updates)
+  1. Find files with `status: generated`
+  2. Publish to Medium API
+  3. Update statuses using regex (safe frontmatter updates)
 - Permissions: `contents: write`, `issues: write`
+- Status flow: generated → published
 
 ## Setup Requirements
 

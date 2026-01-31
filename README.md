@@ -19,21 +19,20 @@ This system enables you to:
 
 ## How It Works
 
-### 1. Issue Capture Workflow
+### 1. Issue Capture and Immediate AI Post Generation
 
 When you create a new issue in this repository:
 - The issue is automatically saved to the `issues/` directory as a markdown file
 - The file includes metadata (issue number, title, author, timestamp)
-- Status is set to "pending" for processing
+- **Immediately**, an AI-generated blog post is created using OpenAI GPT-4
+- Both the issue and generated post are committed to the repository together
+- The issue status is updated to "generated"
+- The generated post is saved to the `posts/` directory
 
-### 2. Daily Publication Workflow
+### 2. Daily Medium Publication Workflow
 
 Every day at 9 AM UTC (configurable):
-- The workflow scans for pending issues in the `issues/` directory
-- Each pending issue is processed:
-  - OpenAI GPT-4 generates a comprehensive technical blog post
-  - The generated post is saved to the `posts/` directory
-  - The issue status is updated to "generated"
+- The workflow scans for generated posts in the `posts/` directory
 - Generated posts are published to Medium via the Medium API
 - Post status is updated to "published" with the Medium URL
 
@@ -92,9 +91,9 @@ Simply create a new issue in this repository:
 
 The workflow will automatically:
 - Capture the issue to the repository
-- Process it the next day at 9 AM UTC
-- Generate a tech post
-- Publish to Medium
+- **Immediately generate an AI-powered tech post**
+- Commit both the issue and generated post
+- (Post will be published to Medium the next day at 9 AM UTC)
 
 ### Manual Trigger
 
@@ -111,8 +110,8 @@ You can manually trigger the publication workflow:
 tech-post/
 ├── .github/
 │   └── workflows/
-│       ├── capture-issue.yml      # Captures issues automatically
-│       └── publish-posts.yml      # Generates and publishes posts daily
+│       ├── capture-issue.yml      # Captures issues and generates AI posts immediately
+│       └── publish-posts.yml      # Publishes generated posts to Medium daily
 ├── issues/                         # Stored issues (auto-generated)
 │   └── issue-{number}.md
 ├── posts/                          # Generated tech posts (auto-generated)
@@ -123,22 +122,23 @@ tech-post/
 
 ## Workflows
 
-### Capture Issue (`capture-issue.yml`)
+### Capture Issue and Generate Post (`capture-issue.yml`)
 
 - **Trigger**: When an issue is opened or edited
 - **Actions**:
   - Saves issue content to `issues/issue-{number}.md`
-  - Commits and pushes to the repository
-  - Sets status to "pending"
+  - **Immediately generates AI blog post using OpenAI GPT-4**
+  - Saves generated post to `posts/post-{number}-{date}.md`
+  - Commits and pushes both issue and generated post
+  - Updates status to "generated"
 
-### Generate and Publish Tech Posts (`publish-posts.yml`)
+### Publish Tech Posts to Medium (`publish-posts.yml`)
 
 - **Trigger**: Daily at 9 AM UTC (or manual)
 - **Actions**:
-  - Finds pending issues
-  - Uses OpenAI GPT-4 to generate technical blog posts
-  - Saves generated posts to `posts/` directory
-  - Publishes posts to Medium
+  - Finds generated posts (status: "generated")
+  - Publishes posts to Medium via API
+  - Updates post status to "published"
   - Updates issue and post statuses
 
 ## Customization
