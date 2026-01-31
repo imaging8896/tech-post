@@ -8,6 +8,7 @@ This repository automatically captures technical issues and publishes AI-generat
 - **[Configuration Guide](CONFIGURATION.md)** - Detailed setup and customization
 - **[Issue Templates](TEMPLATES.md)** - Examples and best practices for writing issues
 - **[Security Guide](SECURITY.md)** - Security best practices and considerations
+- **[Branch Protection Guide](BRANCH_PROTECTION.md)** - Ensure only workflows can commit to main
 
 ## Overview
 
@@ -96,15 +97,26 @@ If you don't set `AUTHORIZED_USERS`, only the repository owner (`imaging8896`) c
 
 ### Repository Access Control
 
-To ensure only your account can push commits:
+**Important:** To ensure only the GitHub Actions workflow can push to the main branch, you must configure branch protection rules.
 
-1. Go to Settings → Branches
-2. Add a branch protection rule for `main` (or your default branch):
-   - Enable "Require a pull request before merging" (optional)
-   - Enable "Restrict who can push to matching branches"
-   - Add your username to the allowed list
+See **[Branch Protection Guide](BRANCH_PROTECTION.md)** for detailed instructions on:
+- Restricting direct pushes to main
+- Allowing only `github-actions[bot]` to commit
+- Preventing unauthorized changes
 
-Alternatively, manage collaborators in Settings → Collaborators to control who has write access.
+**Quick Setup:**
+1. Go to Settings → Branches → Add rule
+2. Branch pattern: `main`
+3. Check "Restrict who can push to matching branches"
+4. Add only: `github-actions[bot]`
+5. Save changes
+
+This ensures:
+- ✅ Only the workflow can commit/push to main when issues are created
+- ❌ Regular users cannot push directly to main (including repository owner)
+- 🔒 Maximum protection for your main branch
+
+**For additional access control options**, see the full [Branch Protection Guide](BRANCH_PROTECTION.md).
 
 ## Usage
 

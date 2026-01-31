@@ -14,6 +14,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check if author is authorized
         id: check_author
@@ -244,4 +247,5 @@ jobs:
             git commit -m "Add issue #${ISSUE_NUMBER} (AI generation skipped - unauthorized author: ${ISSUE_AUTHOR}): ${ISSUE_TITLE}" || echo "No changes to commit"
           fi
           
-          git push
+          # Push to main branch explicitly
+          git push origin main

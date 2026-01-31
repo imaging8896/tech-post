@@ -93,9 +93,11 @@ permissions:
 Recommended security settings:
 
 1. **Branch Protection:**
-   - Protect main/master branch
-   - Require pull request reviews (optional)
-   - Restrict who can push directly
+   - **CRITICAL:** Configure branch protection for main branch
+   - See [Branch Protection Guide](BRANCH_PROTECTION.md) for detailed setup
+   - **Recommended:** Restrict pushes to `github-actions[bot]` only
+   - Prevents unauthorized direct commits to main
+   - Ensures only the workflow can commit when issues are created
 
 2. **Action Permissions:**
    - Set to "Read and write permissions"
