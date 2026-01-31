@@ -54,7 +54,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install openai
+          pip install openai pyyaml
 
       - name: Generate AI post
         env:
@@ -92,9 +92,24 @@ jobs:
               print(f"Issue file not found: {issue_file}")
               exit(1)
 
-          # Extract metadata
-          match = re.search(r'title: "(.*?)"', content)
-          title = match.group(1) if match else 'Untitled'
+          # Extract metadata using YAML parsing
+          import yaml
+          
+          # Split frontmatter from content
+          if content.startswith('---'):
+              parts = content.split('---', 2)
+              if len(parts) >= 3:
+                  try:
+                      frontmatter = yaml.safe_load(parts[1])
+                      title = frontmatter.get('title', 'Untitled')
+                  except yaml.YAMLError:
+                      # Fallback to regex if YAML parsing fails
+                      match = re.search(r'title:\s*"?(.*?)"?\s*$', content, re.MULTILINE)
+                      title = match.group(1) if match else 'Untitled'
+              else:
+                  title = 'Untitled'
+          else:
+              title = 'Untitled'
 
           print(f"Generating AI post for issue #{issue_number}: {title}")
 
@@ -131,13 +146,18 @@ jobs:
               post_filename = f"posts/post-{issue_number}-{datetime.now().strftime('%Y%m%d')}.md"
               os.makedirs('posts', exist_ok=True)
               
+              # Prepare frontmatter using YAML for proper escaping
+              frontmatter_data = {
+                  'issue_number': int(issue_number),
+                  'original_title': title,
+                  'generated_at': datetime.now().isoformat(),
+                  'status': 'generated'
+              }
+              
               with open(post_filename, 'w') as f:
-                  f.write(f"---\n")
-                  f.write(f"issue_number: {issue_number}\n")
-                  f.write(f"original_title: {title}\n")
-                  f.write(f"generated_at: {datetime.now().isoformat()}\n")
-                  f.write(f"status: generated\n")
-                  f.write(f"---\n\n")
+                  f.write("---\n")
+                  f.write(yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True))
+                  f.write("---\n\n")
                   f.write(tech_post)
               
               print(f"Generated post: {post_filename}")
