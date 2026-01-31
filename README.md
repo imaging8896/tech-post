@@ -95,26 +95,33 @@ AUTHORIZED_USERS=imaging8896,colleague1,colleague2
 
 If you don't set `AUTHORIZED_USERS`, only the repository owner (`imaging8896`) can trigger AI generation.
 
-### Repository Access Control
+### Repository Access Control and PR Approvals
 
-**Important:** To ensure only the GitHub Actions workflow can push to the main branch, you must configure branch protection rules.
+**Important:** To ensure only the GitHub Actions workflow can push to the main branch AND all Pull Requests require your approval before merging, you must configure branch protection rules.
 
 See **[Branch Protection Guide](BRANCH_PROTECTION.md)** for detailed instructions on:
 - Restricting direct pushes to main
 - Allowing only `github-actions[bot]` to commit
+- **Requiring PR approval before merge**
+- Setting up Code Owners for automatic review requests
 - Preventing unauthorized changes
 
-**Quick Setup:**
+**Quick Setup for Workflow + PR Approval:**
 1. Go to Settings → Branches → Add rule
 2. Branch pattern: `main`
-3. Check "Restrict who can push to matching branches"
-4. Add only: `github-actions[bot]`
-5. Save changes
+3. Check "Require a pull request before merging"
+4. Set "Require approvals" to 1
+5. Check "Restrict who can push to matching branches"
+6. Add only: `github-actions[bot]`
+7. Check "Do not allow bypassing the above settings"
+8. Save changes
 
 This ensures:
 - ✅ Only the workflow can commit/push to main when issues are created
+- ✅ All Pull Requests require your approval before merging
+- ✅ Code review process enforced for all manual changes
 - ❌ Regular users cannot push directly to main (including repository owner)
-- 🔒 Maximum protection for your main branch
+- 🔒 Maximum protection and quality control
 
 **For additional access control options**, see the full [Branch Protection Guide](BRANCH_PROTECTION.md).
 

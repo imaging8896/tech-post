@@ -1,6 +1,8 @@
-# Branch Protection Setup Guide
+# Branch Protection and PR Approval Setup Guide
 
-This guide explains how to configure branch protection to ensure that only the GitHub Actions workflow can commit and push to the main branch.
+This guide explains how to configure branch protection to ensure that:
+1. Only the GitHub Actions workflow can commit directly to the main branch
+2. All Pull Requests require your approval before merging
 
 ## Overview
 
@@ -9,7 +11,7 @@ The `capture-issue.yml` workflow is configured to:
 - Commit issues and generated posts to `main`
 - Push changes to `main` using the GitHub Actions bot
 
-To ensure **only this workflow** can push to main (and prevent direct pushes from users), you need to configure branch protection rules.
+To ensure **only this workflow** can push to main (and all PRs require approval), you need to configure branch protection rules.
 
 ## Required Branch Protection Settings
 
@@ -24,26 +26,52 @@ To ensure **only this workflow** can push to main (and prevent direct pushes fro
 
 **Branch name pattern:** `main`
 
-#### Required Settings for Workflow-Only Commits:
+#### Required Settings for Workflow-Only Commits + PR Approval:
 
 1. **☑ Require a pull request before merging**
    - This prevents direct pushes to main from users
-   - **IMPORTANT:** Uncheck "Allow specified actors to bypass required pull requests"
+   - Forces all changes (except workflow commits) to go through PRs
    
-2. **☑ Do not allow bypassing the above settings**
-   - Ensures the rules apply to everyone
+2. **☑ Require approvals**
+   - Set to **1** (or more if you want additional reviewers)
+   - This ensures YOU must approve all PRs before they can be merged
    
-3. **☑ Allow force pushes** → Enable only for: "Specify who can force push"
-   - Add: `github-actions[bot]` or your GitHub App
-   - This allows the workflow to push
+3. **☑ Dismiss stale pull request approvals when new commits are pushed**
+   - Recommended for security
+   - Forces re-approval if PR is updated after initial approval
    
-4. **Alternative Approach (Recommended):**
-   - **☑ Restrict who can push to matching branches**
+4. **☑ Require review from Code Owners** (Optional but recommended)
+   - Create a CODEOWNERS file to designate yourself as owner
+   - Ensures only you can approve changes
+   
+5. **☑ Restrict who can dismiss pull request reviews** (Optional)
+   - Prevents others from dismissing your reviews
+   
+6. **☑ Restrict who can push to matching branches**
    - Click "Restrict pushes that create matching branches"
-   - Add `github-actions[bot]` to the list
-   - This explicitly allows ONLY the GitHub Actions bot to push
+   - Add **ONLY**: `github-actions[bot]`
+   - This explicitly allows ONLY the GitHub Actions bot to push directly
+   
+7. **☑ Do not allow bypassing the above settings**
+   - Ensures the rules apply to everyone (including you)
+   - Maximum protection
 
-### Step 3: Configure Workflow Permissions
+### Step 3: (Optional) Create CODEOWNERS File
+
+To ensure you're always designated as the required reviewer:
+
+1. Create a file named `.github/CODEOWNERS` in your repository
+2. Add the following content:
+   ```
+   # Repository owner must review all changes
+   * @imaging8896
+   ```
+3. Commit this file to your repository
+4. In branch protection, enable "Require review from Code Owners"
+
+This ensures that PRs targeting main **must** have your review.
+
+### Step 4: Configure Workflow Permissions
 
 The workflow already has the correct permissions configured:
 
@@ -59,16 +87,25 @@ The workflow uses `${{ secrets.GITHUB_TOKEN }}` which is automatically provided 
 
 ### Verify Branch Protection is Working:
 
-1. **Test as a User:**
+1. **Test Direct Push (should be rejected):**
    - Try to push directly to main: `git push origin main`
    - Expected result: ❌ **Push rejected** (even for repository owner)
    - Error message: "protected branch hook declined"
 
-2. **Test Workflow:**
+2. **Test Workflow (should succeed):**
    - Create a new issue in the repository
    - Check Actions tab for workflow run
    - Expected result: ✅ **Workflow successfully pushes to main**
    - Verify commits appear in main branch
+
+3. **Test PR Approval Requirement:**
+   - Create a test branch: `git checkout -b test-branch`
+   - Make a small change (e.g., update README)
+   - Push the branch: `git push origin test-branch`
+   - Create a Pull Request on GitHub
+   - Expected result: ⚠️ **Cannot merge without approval**
+   - Approve the PR as repository owner
+   - Expected result: ✅ **Can now merge after approval**
 
 ### Check Current Protection Status:
 
@@ -80,47 +117,152 @@ gh api repos/imaging8896/tech-post/branches/main/protection
 # Settings → Branches → Branch protection rules
 ```
 
+## Pull Request Approval Requirements
+
+### Why Require PR Approvals?
+
+Requiring approval for all PRs ensures:
+- ✅ **Code Review**: Every change is reviewed before merging
+- ✅ **Quality Control**: Catch bugs and issues before they reach main
+- ✅ **Audit Trail**: Clear record of who approved what changes
+- ✅ **Intentional Changes**: Prevents accidental or hasty merges
+- ✅ **Collaboration**: Even solo developers benefit from reviewing their own work
+
+### Setting Up PR Approval Requirements
+
+**For Solo Developer (imaging8896):**
+
+1. Go to Settings → Branches → Edit rule for `main`
+2. Under "Protect matching branches":
+   - ☑ **Require a pull request before merging**
+   - ☑ **Require approvals**: Set to **1**
+3. Under "Require approval from specific reviewers":
+   - Option A: Enable **"Require review from Code Owners"** (recommended)
+     - Create `.github/CODEOWNERS` file with: `* @imaging8896`
+   - Option B: Don't enable Code Owners, but you'll need to approve manually
+4. ☑ **Dismiss stale pull request approvals when new commits are pushed**
+   - This ensures re-approval if PR is updated after initial review
+
+**Important for Solo Developer:**
+- You'll need to approve your own PRs (if not bypassing)
+- Or set "Allow specified actors to bypass pull request requirements" with your username
+- Recommended: Do NOT bypass - forces you to review your own work!
+
+### PR Approval Workflow
+
+**When YOU Create a PR:**
+1. Create feature branch: `git checkout -b feature/my-change`
+2. Make changes and commit
+3. Push branch: `git push origin feature/my-change`
+4. Create PR on GitHub
+5. Review your own changes carefully
+6. If everything looks good, approve your own PR
+7. Merge the PR
+
+**When Others Create PRs (if collaborators):**
+1. They create a PR
+2. GitHub notifies you as reviewer
+3. Review the changes
+4. Approve or Request Changes
+5. Once approved, they (or you) can merge
+
+### Best Practices for PR Approvals
+
+1. **Always Review Your Own PRs**
+   - Even if you can bypass, review the diff on GitHub
+   - Check for debugging code, console.logs, TODO comments
+   - Verify documentation is updated
+
+2. **Use PR Templates** (Optional)
+   - Create `.github/pull_request_template.md`
+   - Include checklist: [ ] Tests pass, [ ] Docs updated, etc.
+
+3. **Require Status Checks** (Optional but recommended)
+   - If you add CI/CD, require tests to pass before merge
+   - Settings → Branches → Require status checks
+
+4. **Use Meaningful PR Titles**
+   - Clear description of what changed
+   - Reference issue numbers if applicable
+
+5. **Review the GitHub Diff**
+   - Don't just click approve
+   - Actually read through the changes
+   - Look for security issues, API keys, etc.
+
 ## Configuration Options
 
-### Option 1: Strict Protection (Recommended for Single User)
+### Option 1: Maximum Protection (Recommended - Workflow + PR Approval)
 
 **Settings:**
 - ☑ Require a pull request before merging
-- ☑ Require approvals: 0 (since it's just you)
+- ☑ Require approvals: **1** (you must approve)
+- ☑ Dismiss stale pull request approvals when new commits are pushed
 - ☑ Restrict who can push to matching branches
-  - Allowed: `github-actions[bot]`
+  - Allowed: **ONLY** `github-actions[bot]`
+- ☑ Do not allow bypassing the above settings
 
 **Result:**
-- Only the workflow can push to main
-- You must create PRs for any manual changes
-- Workflow pushes directly for issue-based commits
+- ✅ Only the workflow can push directly to main
+- ✅ All manual changes require a PR
+- ✅ All PRs require YOUR approval before merging
+- ✅ You cannot bypass your own approval requirement
+- 🔒 Maximum security and control
 
-### Option 2: Relaxed Protection (For Teams)
+**Use Case:** Solo developer who wants full control and approval over all changes
 
-**Settings:**
-- ☑ Require a pull request before merging
-- ☑ Allow specified actors to bypass pull request requirements
-  - Add specific trusted users
-- ☑ Restrict who can push to matching branches
-  - Allowed: `github-actions[bot]`, `imaging8896`, other trusted users
-
-**Result:**
-- Workflow and trusted users can push to main
-- Other users must create PRs
-
-### Option 3: Workflow-Only (Most Restrictive)
+### Option 2: Strict Protection with Self-Bypass (Single User)
 
 **Settings:**
 - ☑ Require a pull request before merging
 - ☑ Require approvals: 1
+- ☑ Allow specified actors to bypass pull request requirements
+  - Add: `imaging8896` (repository owner)
+- ☑ Restrict who can push to matching branches
+  - Allowed: `github-actions[bot]`
+
+**Result:**
+- ✅ Only the workflow can push directly to main
+- ✅ You can merge your own PRs without approval (bypass)
+- ⚠️ Less strict than Option 1
+- Workflow pushes directly for issue-based commits
+
+**Use Case:** Solo developer who wants flexibility to merge own PRs quickly
+
+### Option 3: Relaxed Protection (For Teams)
+
+**Settings:**
+- ☑ Require a pull request before merging
+- ☑ Require approvals: 1 (or more for multiple reviewers)
+- ☑ Allow specified actors to bypass pull request requirements
+  - Add specific trusted users
+- ☑ Restrict who can push to matching branches
+  - Allowed: `github-actions[bot]`, trusted collaborators
+
+**Result:**
+- Workflow and trusted users can push to main
+- PRs require approval from designated reviewers
+- Team members can approve each other's PRs
+
+**Use Case:** Team repository with multiple developers
+
+### Option 4: Workflow-Only (Most Restrictive for Direct Pushes)
+
+**Settings:**
+- ☑ Require a pull request before merging
+- ☑ Require approvals: 1+
 - ☑ Restrict who can push to matching branches
   - Allowed: `github-actions[bot]` ONLY
 - ☑ Do not allow bypassing the above settings
+- ☑ Require review from Code Owners
 
 **Result:**
 - **ONLY** the workflow can push to main
 - All users (including owner) must use PRs
-- Maximum protection
+- All PRs require Code Owner approval (you)
+- Maximum protection for all changes
+
+**Use Case:** High-security repositories where every change needs review
 
 ## Important Notes
 
@@ -152,21 +294,33 @@ Solutions:
 3. Ensure "Allow GitHub Actions to create and approve pull requests" is checked
 4. Verify branch protection allows `github-actions[bot]`
 
-**Problem: Users can still push to main**
+**Problem: PRs can be merged without approval**
 
 Solutions:
-1. Ensure "Restrict who can push to matching branches" is enabled
-2. Remove users from the allowed list
-3. Ensure "Do not allow bypassing the above settings" is checked
-4. Check that rule is active (not in "Preview" mode)
+1. Ensure "Require approvals" is set to 1 or more
+2. Check "Require review from Code Owners" is enabled
+3. Verify `.github/CODEOWNERS` file exists and contains your username
+4. Ensure you don't have "Allow specified actors to bypass" enabled for yourself
+
+**Problem: I can't approve my own PRs**
+
+Solutions:
+1. This is by design for "Require review from Code Owners"
+2. Either:
+   - Add another collaborator who can approve
+   - Or enable "Allow specified actors to bypass pull request requirements" for yourself
+   - Or use Option 2 (Self-Bypass) configuration
 
 ## Security Recommendations
 
-1. **Use Option 3 (Workflow-Only)** for maximum security
-2. **Enable audit logging** to track all pushes to main
-3. **Review workflow runs** regularly in the Actions tab
-4. **Rotate GitHub tokens** if you suspect unauthorized access
-5. **Use signed commits** for additional verification (optional)
+1. **Use Option 1 (Maximum Protection)** for best security with PR approvals
+2. **Require PR approval for ALL changes** - even your own
+3. **Enable Code Owners** to ensure you're always the designated reviewer
+4. **Enable audit logging** to track all pushes and approvals
+5. **Review workflow runs** regularly in the Actions tab
+6. **Rotate GitHub tokens** if you suspect unauthorized access
+7. **Use signed commits** for additional verification (optional)
+8. **Enable "Dismiss stale approvals"** to force re-review after updates
 
 ## Additional Resources
 
@@ -176,18 +330,46 @@ Solutions:
 
 ## Summary
 
-To ensure **only the workflow can commit and push to main**:
+To ensure **only the workflow can push directly to main AND all PRs require your approval**:
 
-1. ✅ Workflow explicitly targets `main` branch (configured)
-2. ✅ Workflow has `contents: write` permission (configured)
-3. ⚠️ **YOU MUST CONFIGURE:** Branch protection rules in GitHub Settings
-4. ⚠️ **YOU MUST CONFIGURE:** Restrict pushes to `github-actions[bot]` only
+### Workflow Configuration (Already Done ✅)
+1. ✅ Workflow explicitly targets `main` branch
+2. ✅ Workflow has `contents: write` permission
+3. ✅ Workflow pushes as `github-actions[bot]`
 
-**Quick Setup (30 seconds):**
+### Your Required Configuration (In GitHub Settings ⚠️)
+
+**For Maximum Security (Recommended):**
+1. Go to Settings → Branches → Add/Edit rule for `main`
+2. Branch pattern: `main`
+3. Enable these settings:
+   - ☑ **Require a pull request before merging**
+   - ☑ **Require approvals: 1**
+   - ☑ **Dismiss stale pull request approvals when new commits are pushed**
+   - ☑ **Restrict who can push to matching branches**
+     - Add ONLY: `github-actions[bot]`
+   - ☑ **Do not allow bypassing the above settings**
+4. (Optional) Create `.github/CODEOWNERS` file:
+   ```
+   * @imaging8896
+   ```
+5. (If using CODEOWNERS) Enable:
+   - ☑ **Require review from Code Owners**
+
+**Result:**
+- ✅ Only workflow can push to main directly
+- ✅ All PRs require your approval before merge
+- ✅ You must review even your own PRs
+- 🔒 Maximum protection achieved
+
+**Quick Setup (1 minute):**
 1. Go to Settings → Branches → Add rule
 2. Branch pattern: `main`
-3. Check "Restrict who can push to matching branches"
-4. Add: `github-actions[bot]`
-5. Click "Create" or "Save changes"
+3. Check "Require a pull request before merging"
+4. Set "Require approvals" to 1
+5. Check "Restrict who can push to matching branches"
+6. Add: `github-actions[bot]`
+7. Check "Do not allow bypassing the above settings"
+8. Click "Create" or "Save changes"
 
-✅ **Done!** Only the workflow can now push to main.
+✅ **Done!** Only the workflow can push to main, and all PRs need your approval!
