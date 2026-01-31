@@ -147,7 +147,7 @@ The workflow will automatically:
 You can manually trigger the publication workflow:
 
 1. Go to the "Actions" tab
-2. Select "Generate and Publish Tech Posts"
+2. Select "Publish Tech Posts to Medium"
 3. Click "Run workflow"
 4. Select the branch and click "Run workflow"
 
@@ -195,7 +195,7 @@ tech-post/
   - Finds generated posts (status: "generated")
   - Publishes posts to Medium via API
   - Updates post status to "published"
-  - Updates issue and post statuses
+  - Adds published URL to post metadata
 
 ## Customization
 
@@ -214,10 +214,6 @@ Common cron patterns:
 - `0 9 * * 1` - Every Monday at 9 AM UTC
 - `0 9,21 * * *` - Twice daily at 9 AM and 9 PM UTC
 
-### Customize AI Prompts
-
-Edit the prompt in `.github/workflows/publish-posts.yml` in the "Generate tech posts" step to customize how the AI generates posts.
-
 ### Change Medium Tags
 
 Edit the `tags` array in `.github/workflows/publish-posts.yml`:
@@ -230,10 +226,10 @@ Edit the `tags` array in `.github/workflows/publish-posts.yml`:
 
 ### Posts Not Publishing
 
-1. Check that secrets are configured correctly in repository settings
-2. Verify your OpenAI API key has GPT-4 access
-3. Verify your Medium API token is valid
-4. Check the Actions tab for workflow execution logs
+1. Check that MEDIUM_API_TOKEN secret is configured correctly in repository settings
+2. Verify your Medium API token is valid
+3. Check the Actions tab for workflow execution logs
+4. Ensure there are posts with status "generated" in the posts/ directory
 
 ### Permission Errors
 

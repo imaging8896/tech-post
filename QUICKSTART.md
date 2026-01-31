@@ -68,15 +68,13 @@ If you skip this, only the repository owner can trigger AI generation. ✅ **Rec
    
    **What this system does:**
    - Automatically saves issues to the repository
-   - Uses GPT-4 to generate comprehensive blog posts
+   - Uses GPT-4 to generate comprehensive blog posts immediately
    - Publishes to Medium daily
    
    **How it works:**
    1. I create an issue (like this one)
-   2. GitHub Actions captures it automatically
-   3. Daily workflow processes pending issues
-   4. AI generates a blog post
-   5. Post is published to Medium
+   2. GitHub Actions captures it and generates AI post immediately
+   3. Daily workflow publishes generated posts to Medium
    
    Pretty cool automation! 🚀
    ```
@@ -100,7 +98,7 @@ If you skip this, only the repository owner can trigger AI generation. ✅ **Rec
 ### Test Medium Publishing (Manual)
 
 1. Go to **Actions** tab
-2. Click **"Generate and Publish Tech Posts"** workflow
+2. Click **"Publish Tech Posts to Medium"** workflow
 3. Click **"Run workflow"** button
 4. Select your branch (usually `main`)
 5. Click **"Run workflow"**
@@ -164,7 +162,7 @@ schedule:
 
 Need to publish immediately?
 1. Go to **Actions** tab
-2. Select **"Generate and Publish Tech Posts"**
+2. Select **"Publish Tech Posts to Medium"**
 3. Click **"Run workflow"**
 
 ## 🔧 Troubleshooting

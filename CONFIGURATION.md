@@ -57,21 +57,14 @@ Ensure GitHub Actions has the correct permissions:
 ### Test Post Generation (Manual)
 
 1. Go to Actions tab
-2. Select "Generate and Publish Tech Posts"
+2. Select "Publish Tech Posts to Medium"
 3. Click "Run workflow"
 4. Wait for completion
-5. Check the `posts/` directory for generated content
-6. If Medium token is configured, check your Medium account for the published post
+5. Check your Medium account for the published post
+
+Note: This workflow only publishes already-generated posts. To generate posts, create an issue first (AI post generation happens immediately when issues are created by authorized users).
 
 ## Customization Options
-
-### AI Model
-Default: GPT-4
-
-To change the model, edit `.github/workflows/publish-posts.yml`:
-```python
-model="gpt-4",  # Change to "gpt-3.5-turbo" for lower cost
-```
 
 ### Publication Schedule
 Default: Daily at 9 AM UTC
