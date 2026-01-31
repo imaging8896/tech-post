@@ -22,12 +22,55 @@ This document outlines security best practices and considerations for the Tech P
 - Can incur costs based on usage
 - Set spending limits in OpenAI dashboard
 - Monitor usage regularly
+- **Protected by authorized users list** - Only authorized users can trigger API calls
 
 **Medium API Token:**
 - Has same permissions as your Medium account
 - Can publish posts on your behalf
 - Can be revoked at any time
 - Create a dedicated token for this use
+
+## Authorization and Token Protection
+
+### Preventing Unauthorized API Usage
+
+**By default, only the repository owner can trigger AI post generation.**
+
+This critical security feature prevents:
+- ❌ Unauthorized users from wasting your OpenAI tokens
+- ❌ Random issue creators from running up API costs
+- ❌ Spam or malicious actors from depleting your quota
+
+**How it works:**
+1. When an issue is created, the workflow checks the author's username
+2. Compares against authorized users list (defaults to repository owner)
+3. Only generates AI posts for authorized users
+4. Unauthorized issues are saved but marked as "skipped"
+
+**Configuration:**
+```yaml
+# Default: Only repository owner
+AUTHORIZED_USERS="${REPO_OWNER}"
+
+# Custom: Add specific users via GitHub Secret
+AUTHORIZED_USERS="imaging8896,trusted-colleague,team-member"
+```
+
+**Cost Protection:**
+- Each AI generation costs ~$0.05-$0.15
+- Without authorization, any issue = wasted tokens
+- With authorization, only trusted users can trigger AI calls
+
+**To set up:**
+1. Go to Settings → Secrets and variables → Actions
+2. Add secret: `AUTHORIZED_USERS`
+3. Value: Comma-separated usernames
+4. If not set, only repository owner is authorized ✅
+
+**Monitoring:**
+- Check workflow logs to see authorization decisions
+- Look for "✓ Author is authorized" or "✗ Author is NOT authorized"
+- Review OpenAI usage dashboard for unexpected spikes
 
 ## GitHub Actions Permissions
 

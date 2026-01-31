@@ -34,6 +34,18 @@ Get your automated tech blog up and running in 5 minutes!
    - Value: [paste your Medium token]
    - Click **"Add secret"**
 
+**Optional - Authorize Additional Users:**
+
+By default, **only you (the repository owner) can trigger AI generation** to protect your tokens.
+
+To authorize others:
+6. Add third secret (optional):
+   - Name: `AUTHORIZED_USERS`
+   - Value: `your-username,friend1,friend2` (comma-separated)
+   - Click **"Add secret"**
+
+If you skip this, only the repository owner can trigger AI generation. ✅ **Recommended for token protection!**
+
 ### Step 3: Enable Workflow Permissions (30 seconds)
 
 1. Stay in **Settings** → **Actions** → **General**

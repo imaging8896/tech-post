@@ -16,6 +16,7 @@ This system enables you to:
 2. **AI-generated tech posts** - Issues are transformed into comprehensive technical blog posts using OpenAI's GPT-4
 3. **Daily Medium publishing** - Generated posts are automatically published to Medium each day
 4. **Secure access control** - Only authorized accounts can push commits (configured via GitHub repository settings)
+5. **Token-saving authorization** - AI generation only runs for authorized users to prevent wasting OpenAI tokens
 
 ## How It Works
 
@@ -24,10 +25,12 @@ This system enables you to:
 When you create a new issue in this repository:
 - The issue is automatically saved to the `issues/` directory as a markdown file
 - The file includes metadata (issue number, title, author, timestamp)
-- **Immediately**, an AI-generated blog post is created using OpenAI GPT-4
-- Both the issue and generated post are committed to the repository together
-- The issue status is updated to "generated"
-- The generated post is saved to the `posts/` directory
+- **Authorization check**: The workflow verifies if the issue author is authorized
+  - ✅ **Authorized users**: AI-generated blog post is created immediately using OpenAI GPT-4
+  - ❌ **Unauthorized users**: Issue is saved with status "skipped" - no AI tokens consumed
+- For authorized users, both the issue and generated post are committed to the repository together
+- The issue status is updated to "generated" (authorized) or "skipped" (unauthorized)
+- Generated posts are saved to the `posts/` directory
 
 ### 2. Daily Medium Publication Workflow
 
@@ -49,6 +52,7 @@ Every day at 9 AM UTC (configurable):
 1. **Add GitHub Secrets** - Go to your repository Settings → Secrets and variables → Actions, and add:
    - `OPENAI_API_KEY`: Your OpenAI API key
    - `MEDIUM_API_TOKEN`: Your Medium integration token
+   - `AUTHORIZED_USERS` (Optional): Comma-separated list of GitHub usernames authorized for AI generation
 
 2. **Get OpenAI API Key**:
    - Visit https://platform.openai.com/api-keys
@@ -65,6 +69,30 @@ Every day at 9 AM UTC (configurable):
    - Go to Settings → Actions → General
    - Under "Workflow permissions", select "Read and write permissions"
    - Check "Allow GitHub Actions to create and approve pull requests"
+
+### AI Token Protection - Authorized Users
+
+**By default, only the repository owner can trigger AI post generation.**
+
+This prevents waste of OpenAI API tokens from unauthorized issue creators.
+
+**How it works:**
+- When an issue is created, the workflow checks if the author is authorized
+- ✅ **Authorized**: AI post generated immediately (costs ~$0.05-$0.15 in tokens)
+- ❌ **Unauthorized**: Issue saved with status "skipped", no tokens used
+
+**To authorize additional users:**
+1. Go to Settings → Secrets and variables → Actions
+2. Add a new secret named `AUTHORIZED_USERS`
+3. Set value to comma-separated usernames: `imaging8896,user2,user3`
+4. Save the secret
+
+**Example:**
+```
+AUTHORIZED_USERS=imaging8896,colleague1,colleague2
+```
+
+If you don't set `AUTHORIZED_USERS`, only the repository owner (`imaging8896`) can trigger AI generation.
 
 ### Repository Access Control
 
@@ -126,11 +154,18 @@ tech-post/
 
 - **Trigger**: When an issue is opened or edited
 - **Actions**:
-  - Saves issue content to `issues/issue-{number}.md`
-  - **Immediately generates AI blog post using OpenAI GPT-4**
-  - Saves generated post to `posts/post-{number}-{date}.md`
-  - Commits and pushes both issue and generated post
-  - Updates status to "generated"
+  1. **Check author authorization** - Verifies if issue author is authorized
+  2. Saves issue content to `issues/issue-{number}.md`
+  3. **If authorized**: 
+     - Immediately generates AI blog post using OpenAI GPT-4
+     - Saves generated post to `posts/post-{number}-{date}.md`
+     - Updates issue status to "generated"
+  4. **If unauthorized**:
+     - Skips AI generation (saves tokens!)
+     - Updates issue status to "skipped"
+  5. Commits and pushes changes
+
+**Authorization:** By default, only repository owner. Customize with `AUTHORIZED_USERS` secret.
 
 ### Publish Tech Posts to Medium (`publish-posts.yml`)
 
