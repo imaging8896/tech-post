@@ -1,0 +1,256 @@
+name: Generate and Publish Tech Posts
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install openai requests markdown2
+
+      - name: Generate tech posts
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MEDIUM_API_TOKEN: ${{ secrets.MEDIUM_API_TOKEN }}
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import json
+          import glob
+          import re
+          from datetime import datetime
+          import requests
+
+          # Check for required environment variables
+          openai_key = os.environ.get('OPENAI_API_KEY')
+          medium_token = os.environ.get('MEDIUM_API_TOKEN')
+
+          if not openai_key:
+              print("Warning: OPENAI_API_KEY not set. Skipping AI generation.")
+              exit(0)
+
+          if not medium_token:
+              print("Warning: MEDIUM_API_TOKEN not set. Skipping Medium publishing.")
+              exit(0)
+
+          # Import OpenAI after checking for API key
+          try:
+              from openai import OpenAI
+              client = OpenAI(api_key=openai_key)
+          except ImportError:
+              print("OpenAI library not available")
+              exit(1)
+
+          # Find pending issues
+          issue_files = glob.glob('issues/issue-*.md')
+          pending_issues = []
+
+          for issue_file in issue_files:
+              with open(issue_file, 'r') as f:
+                  content = f.read()
+                  if 'status: pending' in content:
+                      pending_issues.append(issue_file)
+
+          if not pending_issues:
+              print("No pending issues to process")
+              exit(0)
+
+          print(f"Found {len(pending_issues)} pending issue(s)")
+
+          # Process each pending issue
+          for issue_file in pending_issues:
+              print(f"\nProcessing {issue_file}...")
+              
+              with open(issue_file, 'r') as f:
+                  content = f.read()
+
+              # Extract metadata
+              match = re.search(r'issue_number: (\d+)', content)
+              issue_number = match.group(1) if match else 'unknown'
+              
+              match = re.search(r'title: "(.*?)"', content)
+              title = match.group(1) if match else 'Untitled'
+
+              # Generate tech post using OpenAI
+              prompt = f"""You are a technical writer. Based on the following issue, create a comprehensive, well-structured technical blog post suitable for Medium.
+
+          Issue Content:
+          {content}
+
+          Please write a detailed technical post that:
+          1. Has an engaging title
+          2. Includes an introduction
+          3. Explains the technical problem or topic
+          4. Provides solutions, code examples, or insights
+          5. Includes a conclusion
+          6. Is formatted in Markdown
+
+          Make it informative and professional."""
+
+              try:
+                  response = client.chat.completions.create(
+                      model="gpt-4",
+                      messages=[
+                          {"role": "system", "content": "You are a technical writer who creates engaging blog posts."},
+                          {"role": "user", "content": prompt}
+                      ],
+                      max_tokens=2000,
+                      temperature=0.7
+                  )
+                  
+                  tech_post = response.choices[0].message.content
+                  
+                  # Save the generated post
+                  post_filename = f"posts/post-{issue_number}-{datetime.now().strftime('%Y%m%d')}.md"
+                  os.makedirs('posts', exist_ok=True)
+                  
+                  with open(post_filename, 'w') as f:
+                      f.write(f"---\n")
+                      f.write(f"issue_number: {issue_number}\n")
+                      f.write(f"original_title: {title}\n")
+                      f.write(f"generated_at: {datetime.now().isoformat()}\n")
+                      f.write(f"status: generated\n")
+                      f.write(f"---\n\n")
+                      f.write(tech_post)
+                  
+                  print(f"Generated post: {post_filename}")
+                  
+                  # Update issue status
+                  updated_content = content.replace('status: pending', 'status: generated')
+                  with open(issue_file, 'w') as f:
+                      f.write(updated_content)
+                  
+              except Exception as e:
+                  print(f"Error generating post for {issue_file}: {e}")
+                  continue
+
+          print("\nTech post generation completed")
+          PYTHON_SCRIPT
+
+      - name: Publish to Medium
+        env:
+          MEDIUM_API_TOKEN: ${{ secrets.MEDIUM_API_TOKEN }}
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import json
+          import glob
+          import re
+          import requests
+
+          medium_token = os.environ.get('MEDIUM_API_TOKEN')
+
+          if not medium_token:
+              print("MEDIUM_API_TOKEN not set. Skipping publishing.")
+              exit(0)
+
+          # Find generated posts that haven't been published
+          post_files = glob.glob('posts/post-*.md')
+          to_publish = []
+
+          for post_file in post_files:
+              with open(post_file, 'r') as f:
+                  content = f.read()
+                  if 'status: generated' in content:
+                      to_publish.append(post_file)
+
+          if not to_publish:
+              print("No posts to publish")
+              exit(0)
+
+          print(f"Found {len(to_publish)} post(s) to publish")
+
+          # Get Medium user ID
+          headers = {
+              'Authorization': f'Bearer {medium_token}',
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+          }
+
+          try:
+              user_response = requests.get('https://api.medium.com/v1/me', headers=headers)
+              user_response.raise_for_status()
+              user_id = user_response.json()['data']['id']
+              print(f"Medium user ID: {user_id}")
+          except Exception as e:
+              print(f"Error getting Medium user: {e}")
+              exit(1)
+
+          # Publish each post
+          for post_file in to_publish:
+              print(f"\nPublishing {post_file}...")
+              
+              with open(post_file, 'r') as f:
+                  content = f.read()
+
+              # Extract content after frontmatter
+              parts = content.split('---\n', 2)
+              if len(parts) >= 3:
+                  post_content = parts[2].strip()
+              else:
+                  post_content = content
+
+              # Extract title from content
+              lines = post_content.split('\n')
+              title = lines[0].replace('#', '').strip() if lines else 'Tech Post'
+
+              # Prepare Medium post
+              post_data = {
+                  'title': title,
+                  'contentFormat': 'markdown',
+                  'content': post_content,
+                  'publishStatus': 'public',
+                  'tags': ['technology', 'programming', 'software-development']
+              }
+
+              try:
+                  publish_response = requests.post(
+                      f'https://api.medium.com/v1/users/{user_id}/posts',
+                      headers=headers,
+                      json=post_data
+                  )
+                  publish_response.raise_for_status()
+                  
+                  result = publish_response.json()
+                  post_url = result['data']['url']
+                  print(f"Published successfully: {post_url}")
+                  
+                  # Update post status
+                  updated_content = content.replace('status: generated', f'status: published\npublished_url: {post_url}')
+                  with open(post_file, 'w') as f:
+                      f.write(updated_content)
+                  
+              except Exception as e:
+                  print(f"Error publishing {post_file}: {e}")
+                  if hasattr(e, 'response'):
+                      print(f"Response: {e.response.text}")
+                  continue
+
+          print("\nPublishing completed")
+          PYTHON_SCRIPT
+
+      - name: Commit and push updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add issues/ posts/
+          git commit -m "Update tech posts and issue statuses" || echo "No changes to commit"
+          git push

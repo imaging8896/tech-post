@@ -1,0 +1,56 @@
+name: Capture Issue
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  capture-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Save issue to file
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_CREATED_AT: ${{ github.event.issue.created_at }}
+        run: |
+          # Create issue directory
+          mkdir -p issues
+          
+          # Save issue as markdown
+          cat > "issues/issue-${ISSUE_NUMBER}.md" << 'EOF'
+          ---
+          issue_number: ${{ github.event.issue.number }}
+          title: "${{ github.event.issue.title }}"
+          author: ${{ github.event.issue.user.login }}
+          created_at: ${{ github.event.issue.created_at }}
+          status: pending
+          ---
+
+          # ${{ github.event.issue.title }}
+
+          **Issue #${{ github.event.issue.number }}**
+          **Author:** ${{ github.event.issue.user.login }}
+          **Created:** ${{ github.event.issue.created_at }}
+
+          ## Description
+
+          ${{ github.event.issue.body }}
+          EOF
+
+      - name: Commit and push issue
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add issues/
+          git commit -m "Add issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}" || echo "No changes to commit"
+          git push
