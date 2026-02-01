@@ -54,6 +54,8 @@ Every day at 9 AM UTC (configurable):
    - `OPENAI_API_KEY`: Your OpenAI API key
    - `LINKEDIN_ACCESS_TOKEN`: Your LinkedIn integration token
    - `AUTHORIZED_USERS` (Optional): Comma-separated list of GitHub usernames authorized for AI generation
+   - `LINKEDIN_TOKEN_CREATED_AT` (Optional): Date when LinkedIn token was created (format: YYYY-MM-DD) for expiration monitoring
+   - `DISCORD_WEBHOOK_URL` (Optional): Discord webhook URL for token expiration notifications
 
 2. **Get OpenAI API Key**:
    - Visit https://platform.openai.com/api-keys
@@ -159,12 +161,13 @@ You can manually trigger the publication workflow:
 tech-post/
 ├── .github/
 │   └── workflows/
-│       ├── capture-issue.yml      # Captures issues and generates AI posts immediately
-│       └── publish-posts.yml      # Publishes generated posts to LinkedIn daily
-├── issues/                         # Stored issues (auto-generated)
+│       ├── capture-issue.yml        # Captures issues and generates AI posts immediately
+│       ├── check-linkedin-token.yml # Checks LinkedIn token expiration daily
+│       └── publish-posts.yml        # Publishes generated posts to LinkedIn daily
+├── issues/                           # Stored issues (auto-generated)
 │   └── issue-{number}.md
-├── posts/                          # Generated tech posts (auto-generated, in Traditional Chinese)
-│   └── post-{number}-{date}.md     # Single post, or post-{number}-{date}-part{n}.md for split posts
+├── posts/                            # Generated tech posts (auto-generated, in Traditional Chinese)
+│   └── post-{number}-{date}.md       # Single post, or post-{number}-{date}-part{n}.md for split posts
 ├── LICENSE
 └── README.md
 ```
@@ -199,6 +202,18 @@ tech-post/
   - Publishes posts to LinkedIn via API
   - Updates post status to "published"
   - Adds published URL to post metadata
+
+### Check LinkedIn Token Expiration (`check-linkedin-token.yml`)
+
+- **Trigger**: Daily at 8 AM UTC (or manual)
+- **Purpose**: Monitors LinkedIn access token expiration and sends Discord notifications
+- **Requirements**: 
+  - `LINKEDIN_TOKEN_CREATED_AT` secret (format: YYYY-MM-DD)
+  - `DISCORD_WEBHOOK_URL` secret
+- **Behavior**:
+  - Calculates days remaining until token expires (60-day lifetime)
+  - Sends Discord notification when 10 days or less remain
+  - Notification urgency levels: NOTICE → WARNING → CRITICAL → EXPIRED
 
 ## Customization
 
