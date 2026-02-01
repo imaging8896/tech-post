@@ -36,6 +36,58 @@ Your LinkedIn access token for publishing posts.
 - Keep it secure and never share it
 - Tokens typically expire after 60 days and need to be refreshed
 
+### LINKEDIN_TOKEN_CREATED_AT (Optional)
+The date when your LinkedIn access token was created or last refreshed. Used for token expiration notifications.
+
+**Format:** `YYYY-MM-DD` (e.g., `2026-01-15`)
+
+**How to set it:**
+1. When you create or refresh your LinkedIn access token, note the date
+2. Go to Settings → Secrets and variables → Actions
+3. Add a new secret named `LINKEDIN_TOKEN_CREATED_AT`
+4. Set the value to the date in `YYYY-MM-DD` format
+5. **Remember to update this secret whenever you refresh your token**
+
+**Important:**
+- This secret is used by the daily token expiration check workflow
+- When combined with `DISCORD_WEBHOOK_URL`, you'll receive notifications when your token is about to expire
+- Notifications are sent when 10 days or less remain before expiration
+
+### DISCORD_WEBHOOK_URL (Optional)
+Discord webhook URL for receiving notifications about LinkedIn token expiration.
+
+**How to get it:**
+1. Open Discord and go to your server
+2. Go to Server Settings → Integrations → Webhooks
+3. Click "New Webhook"
+4. Give it a name (e.g., "Tech Post Alerts")
+5. Select the channel where you want to receive notifications
+6. Click "Copy Webhook URL"
+7. Add it as a GitHub secret
+
+**Important:**
+- This is used for LinkedIn token expiration notifications
+- Notifications are sent daily when 10 days or less remain before token expiration
+- Urgency levels: NOTICE (10-8 days), WARNING (7-4 days), CRITICAL (3-1 days), EXPIRED (0 or negative days)
+
+## Token Expiration Monitoring
+
+A daily workflow (`check-linkedin-token.yml`) runs at 8 AM UTC to check if your LinkedIn token is about to expire:
+
+- **Token lifetime:** 60 days
+- **Notification threshold:** 10 days before expiration
+- **Notification channel:** Discord (via webhook)
+
+**To enable token expiration monitoring:**
+1. Set the `LINKEDIN_TOKEN_CREATED_AT` secret to your token creation date
+2. Set the `DISCORD_WEBHOOK_URL` secret to your Discord webhook URL
+3. The workflow will automatically run daily and send notifications when needed
+
+**When you refresh your LinkedIn token:**
+1. Update the `LINKEDIN_ACCESS_TOKEN` secret with the new token
+2. Update the `LINKEDIN_TOKEN_CREATED_AT` secret with today's date
+3. You'll receive notifications again starting 50 days from the new date
+
 ## Workflow Permissions
 
 Ensure GitHub Actions has the correct permissions:

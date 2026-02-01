@@ -1,0 +1,140 @@
+name: Check LinkedIn Token Expiration
+
+on:
+  schedule:
+    # Run daily at 8 AM UTC (before the publish workflow at 9 AM)
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-token-expiration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check token expiration and send notification
+        env:
+          LINKEDIN_TOKEN_CREATED_AT: ${{ secrets.LINKEDIN_TOKEN_CREATED_AT }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          #!/bin/bash
+          set -e
+          
+          # LinkedIn tokens expire after 60 days
+          TOKEN_EXPIRY_DAYS=60
+          # Send notification when 10 days or less remain (i.e., at 50 days old)
+          WARNING_THRESHOLD_DAYS=10
+          
+          # Check if LINKEDIN_TOKEN_CREATED_AT is set
+          if [ -z "${LINKEDIN_TOKEN_CREATED_AT}" ]; then
+            echo "⚠️  LINKEDIN_TOKEN_CREATED_AT secret is not set."
+            echo "Please set this secret to the date when your LinkedIn token was created (format: YYYY-MM-DD)"
+            exit 0
+          fi
+          
+          # Check if DISCORD_WEBHOOK_URL is set
+          if [ -z "${DISCORD_WEBHOOK_URL}" ]; then
+            echo "⚠️  DISCORD_WEBHOOK_URL secret is not set."
+            echo "Please set this secret to receive Discord notifications about token expiration."
+            exit 0
+          fi
+          
+          # Parse the token creation date
+          TOKEN_CREATED_DATE="${LINKEDIN_TOKEN_CREATED_AT}"
+          
+          # Calculate days since token was created
+          TODAY=$(date +%s)
+          TOKEN_DATE=$(date -d "${TOKEN_CREATED_DATE}" +%s 2>/dev/null) || {
+            echo "❌ Invalid date format for LINKEDIN_TOKEN_CREATED_AT: ${TOKEN_CREATED_DATE}"
+            echo "Please use format: YYYY-MM-DD"
+            exit 1
+          }
+          
+          DAYS_ELAPSED=$(( (TODAY - TOKEN_DATE) / 86400 ))
+          DAYS_REMAINING=$(( TOKEN_EXPIRY_DAYS - DAYS_ELAPSED ))
+          EXPIRY_DATE=$(date -d "${TOKEN_CREATED_DATE} + ${TOKEN_EXPIRY_DAYS} days" +%Y-%m-%d)
+          
+          echo "📊 LinkedIn Token Status:"
+          echo "   Token created: ${TOKEN_CREATED_DATE}"
+          echo "   Days elapsed: ${DAYS_ELAPSED}"
+          echo "   Days remaining: ${DAYS_REMAINING}"
+          echo "   Expires on: ${EXPIRY_DATE}"
+          
+          # Check if notification is needed
+          if [ ${DAYS_REMAINING} -le ${WARNING_THRESHOLD_DAYS} ]; then
+            echo ""
+            echo "⚠️  Token expiration warning! Sending Discord notification..."
+            
+            # Determine urgency level
+            if [ ${DAYS_REMAINING} -le 0 ]; then
+              URGENCY="🚨 **EXPIRED**"
+              COLOR=15158332  # Red
+              MESSAGE="Your LinkedIn access token has **EXPIRED**! Posts cannot be published until you update the token."
+            elif [ ${DAYS_REMAINING} -le 3 ]; then
+              URGENCY="🔴 **CRITICAL**"
+              COLOR=15158332  # Red
+              MESSAGE="Your LinkedIn access token will expire in **${DAYS_REMAINING} day(s)**! Please update it immediately."
+            elif [ ${DAYS_REMAINING} -le 7 ]; then
+              URGENCY="🟠 **WARNING**"
+              COLOR=16744192  # Orange
+              MESSAGE="Your LinkedIn access token will expire in **${DAYS_REMAINING} day(s)**. Please update it soon."
+            else
+              URGENCY="🟡 **NOTICE**"
+              COLOR=16776960  # Yellow
+              MESSAGE="Your LinkedIn access token will expire in **${DAYS_REMAINING} day(s)**. Consider updating it."
+            fi
+            
+            # Send Discord webhook notification
+            DISCORD_PAYLOAD=$(cat <<EOF
+          {
+            "embeds": [{
+              "title": "LinkedIn Token Expiration Alert",
+              "description": "${MESSAGE}",
+              "color": ${COLOR},
+              "fields": [
+                {
+                  "name": "Status",
+                  "value": "${URGENCY}",
+                  "inline": true
+                },
+                {
+                  "name": "Days Remaining",
+                  "value": "${DAYS_REMAINING}",
+                  "inline": true
+                },
+                {
+                  "name": "Expiry Date",
+                  "value": "${EXPIRY_DATE}",
+                  "inline": true
+                },
+                {
+                  "name": "Token Created",
+                  "value": "${TOKEN_CREATED_DATE}",
+                  "inline": true
+                }
+              ],
+              "footer": {
+                "text": "Update your LINKEDIN_ACCESS_TOKEN and LINKEDIN_TOKEN_CREATED_AT secrets in GitHub"
+              }
+            }]
+          }
+          EOF
+          )
+            
+            # Send the webhook
+            HTTP_RESPONSE=$(curl -s -o /tmp/discord_response.txt -w "%{http_code}" \
+              -H "Content-Type: application/json" \
+              -X POST \
+              -d "${DISCORD_PAYLOAD}" \
+              "${DISCORD_WEBHOOK_URL}")
+            
+            if [ "${HTTP_RESPONSE}" = "204" ] || [ "${HTTP_RESPONSE}" = "200" ]; then
+              echo "✅ Discord notification sent successfully!"
+            else
+              echo "❌ Failed to send Discord notification. HTTP status: ${HTTP_RESPONSE}"
+              cat /tmp/discord_response.txt 2>/dev/null || true
+              exit 1
+            fi
+          else
+            echo ""
+            echo "✅ Token is valid. No notification needed."
+            echo "   Next notification will be sent when ${WARNING_THRESHOLD_DAYS} days or less remain."
+          fi
