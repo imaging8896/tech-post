@@ -6,6 +6,10 @@ on:
     - cron: '0 8 * * *'
   workflow_dispatch: # Allow manual trigger
 
+# This workflow does not require any repository permissions
+# as it only reads secrets and makes external HTTP calls
+permissions: {}
+
 jobs:
   check-token-expiration:
     runs-on: ubuntu-latest
@@ -41,6 +45,7 @@ jobs:
           TOKEN_CREATED_DATE="${LINKEDIN_TOKEN_CREATED_AT}"
           
           # Calculate days since token was created
+          # Note: Uses GNU date -d syntax, which is available on ubuntu-latest runners
           TODAY=$(date +%s)
           TOKEN_DATE=$(date -d "${TOKEN_CREATED_DATE}" +%s 2>/dev/null) || {
             echo "❌ Invalid date format for LINKEDIN_TOKEN_CREATED_AT: ${TOKEN_CREATED_DATE}"
@@ -120,17 +125,23 @@ jobs:
           )
             
             # Send the webhook
+            CURL_EXIT_CODE=0
             HTTP_RESPONSE=$(curl -s -o /tmp/discord_response.txt -w "%{http_code}" \
               -H "Content-Type: application/json" \
               -X POST \
               -d "${DISCORD_PAYLOAD}" \
-              "${DISCORD_WEBHOOK_URL}")
+              "${DISCORD_WEBHOOK_URL}") || CURL_EXIT_CODE=$?
             
             if [ "${HTTP_RESPONSE}" = "204" ] || [ "${HTTP_RESPONSE}" = "200" ]; then
               echo "✅ Discord notification sent successfully!"
             else
-              echo "❌ Failed to send Discord notification. HTTP status: ${HTTP_RESPONSE}"
-              cat /tmp/discord_response.txt 2>/dev/null || true
+              echo "❌ Failed to send Discord notification."
+              echo "   HTTP status code: ${HTTP_RESPONSE}"
+              echo "   Curl exit code: ${CURL_EXIT_CODE}"
+              if [ -f /tmp/discord_response.txt ] && [ -s /tmp/discord_response.txt ]; then
+                echo "   Response body:"
+                cat /tmp/discord_response.txt
+              fi
               exit 1
             fi
           else
