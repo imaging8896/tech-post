@@ -150,8 +150,9 @@ jobs:
 
           print(f"Generating AI post for issue #{issue_number}: {title}")
 
-          # LinkedIn character limit
+          # LinkedIn character limit and split marker constant
           LINKEDIN_CHAR_LIMIT = 3000
+          SPLIT_MARKER = '---SPLIT---'
 
           # Generate tech post using OpenAI
           prompt = f"""你是一位專業的技術作家。請根據以下 Issue 內容，撰寫一篇結構完整、適合發佈於 LinkedIn 的繁體中文技術文章。
@@ -168,7 +169,7 @@ jobs:
           6. 使用 Markdown 格式
           7. **全文必須使用繁體中文撰寫**
           8. **例外：專有名詞（如技術術語、產品名稱、程式語言名稱等）可以使用英文**
-          9. **重要：LinkedIn 有 {LINKEDIN_CHAR_LIMIT} 字元限制，如果內容會超過此限制，請將文章拆分成多篇貼文，每篇貼文以「---SPLIT---」分隔，並在每篇貼文開頭標註「(第 X 篇/共 Y 篇)」**
+          9. **重要：LinkedIn 有 {LINKEDIN_CHAR_LIMIT} 字元限制，如果內容會超過此限制，請將文章拆分成多篇貼文，每篇貼文以「{SPLIT_MARKER}」分隔，並在每篇貼文開頭標註「(第 X 篇/共 Y 篇)」**
 
           請確保內容專業且具有資訊價值。"""
 
@@ -186,8 +187,14 @@ jobs:
               tech_post = response.choices[0].message.content
               
               # Split posts if they contain the split marker
-              posts = tech_post.split('---SPLIT---')
+              posts = tech_post.split(SPLIT_MARKER)
               posts = [p.strip() for p in posts if p.strip()]
+              
+              # Validate that each post part is within the LinkedIn character limit
+              # If any part exceeds the limit, log a warning (AI didn't honor the limit perfectly)
+              for i, post_content in enumerate(posts, 1):
+                  if len(post_content) > LINKEDIN_CHAR_LIMIT:
+                      print(f"Warning: Post part {i} exceeds LinkedIn limit ({len(post_content)} chars > {LINKEDIN_CHAR_LIMIT})")
               
               os.makedirs('posts', exist_ok=True)
               
