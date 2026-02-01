@@ -150,54 +150,95 @@ jobs:
 
           print(f"Generating AI post for issue #{issue_number}: {title}")
 
-          # Generate tech post using OpenAI
-          prompt = f"""You are a technical writer. Based on the following issue, create a comprehensive, well-structured technical blog post suitable for Medium.
+          # LinkedIn character limit and split marker constant
+          LINKEDIN_CHAR_LIMIT = 3000
+          SPLIT_MARKER = '---SPLIT---'
 
-          Issue Content:
+          # Generate tech post using OpenAI
+          prompt = f"""你是一位專業的技術作家。請根據以下 Issue 內容，撰寫一篇結構完整、適合發佈於 LinkedIn 的繁體中文技術文章。
+
+          Issue 內容:
           {content}
 
-          Please write a detailed technical post that:
-          1. Has an engaging title
-          2. Includes an introduction
-          3. Explains the technical problem or topic
-          4. Provides solutions, code examples, or insights
-          5. Includes a conclusion
-          6. Is formatted in Markdown
+          請撰寫一篇詳細的技術文章，需要符合以下要求:
+          1. 有吸引人的標題
+          2. 包含引言
+          3. 清楚解釋技術問題或主題
+          4. 提供解決方案、程式碼範例或見解
+          5. 包含結論
+          6. 使用 Markdown 格式
+          7. **全文必須使用繁體中文撰寫**
+          8. **例外：專有名詞（如技術術語、產品名稱、程式語言名稱等）可以使用英文**
+          9. **重要：LinkedIn 有 {LINKEDIN_CHAR_LIMIT} 字元限制，如果內容會超過此限制，請將文章拆分成多篇貼文，每篇貼文以「{SPLIT_MARKER}」分隔，並在每篇貼文開頭標註「(第 X 篇/共 Y 篇)」**
 
-          Make it informative and professional."""
+          請確保內容專業且具有資訊價值。"""
 
           try:
               response = client.chat.completions.create(
                   model="gpt-4",
                   messages=[
-                      {"role": "system", "content": "You are a technical writer who creates engaging blog posts."},
+                      {"role": "system", "content": "你是一位專業的技術作家，專門撰寫繁體中文的技術部落格文章。專有名詞可以使用英文。"},
                       {"role": "user", "content": prompt}
                   ],
-                  max_tokens=2000,
+                  max_tokens=4000,
                   temperature=0.7
               )
               
               tech_post = response.choices[0].message.content
               
-              # Save the generated post
-              post_filename = f"posts/post-{issue_number}-{datetime.now().strftime('%Y%m%d')}.md"
+              # Split posts if they contain the split marker
+              posts = tech_post.split(SPLIT_MARKER)
+              posts = [p.strip() for p in posts if p.strip()]
+              
+              # Validate that each post part is within the LinkedIn character limit
+              # If any part exceeds the limit, log a warning (AI didn't honor the limit perfectly)
+              for i, post_content in enumerate(posts, 1):
+                  if len(post_content) > LINKEDIN_CHAR_LIMIT:
+                      print(f"Warning: Post part {i} exceeds LinkedIn limit ({len(post_content)} chars > {LINKEDIN_CHAR_LIMIT})")
+              
               os.makedirs('posts', exist_ok=True)
               
-              # Prepare frontmatter using YAML for proper escaping
-              frontmatter_data = {
-                  'issue_number': int(issue_number),
-                  'original_title': title,
-                  'generated_at': datetime.now().isoformat(),
-                  'status': 'generated'
-              }
+              # If there are multiple posts, save each one separately
+              if len(posts) > 1:
+                  for i, post_content in enumerate(posts, 1):
+                      post_filename = f"posts/post-{issue_number}-{datetime.now().strftime('%Y%m%d')}-part{i}.md"
+                      
+                      # Prepare frontmatter using YAML for proper escaping
+                      frontmatter_data = {
+                          'issue_number': int(issue_number),
+                          'original_title': title,
+                          'generated_at': datetime.now().isoformat(),
+                          'status': 'generated',
+                          'part': i,
+                          'total_parts': len(posts)
+                      }
+                      
+                      with open(post_filename, 'w') as f:
+                          f.write("---\n")
+                          f.write(yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True))
+                          f.write("---\n\n")
+                          f.write(post_content)
+                      
+                      print(f"Generated post part {i}/{len(posts)}: {post_filename}")
+              else:
+                  # Single post case
+                  post_filename = f"posts/post-{issue_number}-{datetime.now().strftime('%Y%m%d')}.md"
+                  
+                  # Prepare frontmatter using YAML for proper escaping
+                  frontmatter_data = {
+                      'issue_number': int(issue_number),
+                      'original_title': title,
+                      'generated_at': datetime.now().isoformat(),
+                      'status': 'generated'
+                  }
+                  
+                  with open(post_filename, 'w') as f:
+                      f.write("---\n")
+                      f.write(yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True))
+                      f.write("---\n\n")
+                      f.write(tech_post)
               
-              with open(post_filename, 'w') as f:
-                  f.write("---\n")
-                  f.write(yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True))
-                  f.write("---\n\n")
-                  f.write(tech_post)
-              
-              print(f"Generated post: {post_filename}")
+                  print(f"Generated post: {post_filename}")
               
               # Update issue status - use regex to only replace in frontmatter
               updated_content = re.sub(
