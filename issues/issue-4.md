@@ -39,4 +39,3 @@ status: generated
 
 **Conclusion:**
 我想未來走路散步寫 code 的時代即將來臨
-
