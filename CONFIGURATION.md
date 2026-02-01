@@ -20,20 +20,21 @@ Your OpenAI API key for GPT-4 access.
 - Set spending limits in your OpenAI dashboard
 
 ### LINKEDIN_ACCESS_TOKEN
-Your LinkedIn integration token for publishing posts.
+Your LinkedIn access token for publishing posts.
 
 **How to get it:**
-1. Go to https://medium.com/me/settings/security
-2. Scroll to the "Integration tokens" section
-3. Enter a description (e.g., "Tech Post Publisher")
-4. Click "Get integration token"
-5. Copy the token immediately (you won't see it again)
-6. Add it as a GitHub secret
+1. Go to https://www.linkedin.com/developers/
+2. Create an app or use existing app
+3. Request access to "Share on LinkedIn" product
+4. Configure OAuth 2.0 settings
+5. Generate access token with required scopes (r_liteprofile, w_member_social)
+6. Copy the token
+7. Add it as a GitHub secret
 
 **Important:**
 - The token has the same permissions as your LinkedIn account
 - Keep it secure and never share it
-- You can revoke and regenerate tokens at any time
+- Tokens typically expire after 60 days and need to be refreshed
 
 ## Workflow Permissions
 

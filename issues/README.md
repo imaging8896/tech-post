@@ -37,7 +37,7 @@ status: pending
 
 - `pending` - Issue has been captured, waiting to be processed
 - `generated` - AI has generated a blog post from this issue
-- `published` - Blog post has been published to Medium
+- `published` - Blog post has been published to LinkedIn
 
 ## Manual Management
 

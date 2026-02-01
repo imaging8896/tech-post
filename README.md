@@ -61,10 +61,11 @@ Every day at 9 AM UTC (configurable):
    - Ensure you have GPT-4 API access
 
 3. **Get LinkedIn API Token**:
-   - Visit https://medium.com/me/settings/security
-   - Scroll to "Integration tokens"
-   - Create a new integration token
-   - Copy the token (you won't be able to see it again)
+   - Visit https://www.linkedin.com/developers/
+   - Create an app or use existing app
+   - Request access to "Share on LinkedIn" product
+   - Generate OAuth 2.0 access token with scopes: r_liteprofile, w_member_social
+   - Copy the token
 
 4. **Configure Repository Permissions**:
    - Go to Settings → Actions → General

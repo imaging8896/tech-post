@@ -208,11 +208,12 @@ Optimize usage:
 6. Contact OpenAI support if needed
 
 **LinkedIn Token:**
-1. Go to https://medium.com/me/settings/security
-2. Revoke the compromised token
-3. Create a new integration token
-4. Update GitHub Secret
-5. Check LinkedIn posts for unauthorized publications
+1. Go to https://www.linkedin.com/developers/
+2. Go to your app settings
+3. Revoke the compromised token
+4. Generate a new access token
+5. Update GitHub Secret
+6. Check LinkedIn posts for unauthorized publications
 
 **GitHub Secrets:**
 1. Rotate the compromised secret

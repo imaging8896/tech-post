@@ -14,11 +14,12 @@ Get your automated tech blog up and running in 5 minutes!
 5. Save it somewhere safe
 
 #### LinkedIn API Token
-1. Go to https://medium.com/me/settings/security
-2. Scroll to **"Integration tokens"**
-3. Enter description: `Tech Post Publisher`
-4. Click **"Get integration token"**
-5. **Copy immediately** (you won't see it again!)
+1. Go to https://www.linkedin.com/developers/
+2. Create an app or use existing app
+3. Request access to **"Share on LinkedIn"** product
+4. Configure OAuth 2.0 settings
+5. Generate access token with scopes: **r_liteprofile**, **w_member_social**
+6. **Copy the token**
 
 ### Step 2: Add Secrets to GitHub (1 minute)
 
@@ -108,7 +109,7 @@ If you skip this, only the repository owner can trigger AI generation. ✅ **Rec
 
 ### Check Your LinkedIn Account
 
-1. Go to https://medium.com/me/stories
+1. Go to https://www.linkedin.com/feed/
 2. You should see your new published post! 🎉
 
 ## 🎯 Daily Usage

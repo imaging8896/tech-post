@@ -300,7 +300,7 @@ The AI will generate better posts when your issue includes:
 2. Fill in the sections with your technical content
 3. Create a new issue in this repository
 4. Wait for the daily workflow to generate and publish your post
-5. Check your Medium account for the published article
+5. Check your LinkedIn profile for the published post
 
 ## Need Help?
 
