@@ -19,8 +19,8 @@ Your OpenAI API key for GPT-4 access.
 - Monitor your usage to avoid unexpected charges
 - Set spending limits in your OpenAI dashboard
 
-### MEDIUM_API_TOKEN
-Your Medium integration token for publishing posts.
+### LINKEDIN_ACCESS_TOKEN
+Your LinkedIn integration token for publishing posts.
 
 **How to get it:**
 1. Go to https://medium.com/me/settings/security
@@ -31,7 +31,7 @@ Your Medium integration token for publishing posts.
 6. Add it as a GitHub secret
 
 **Important:**
-- The token has the same permissions as your Medium account
+- The token has the same permissions as your LinkedIn account
 - Keep it secure and never share it
 - You can revoke and regenerate tokens at any time
 
@@ -57,10 +57,10 @@ Ensure GitHub Actions has the correct permissions:
 ### Test Post Generation (Manual)
 
 1. Go to Actions tab
-2. Select "Publish Tech Posts to Medium"
+2. Select "Publish Tech Posts to LinkedIn"
 3. Click "Run workflow"
 4. Wait for completion
-5. Check your Medium account for the published post
+5. Check your LinkedIn account for the published post
 
 Note: This workflow only publishes already-generated posts. To generate posts, create an issue first (AI post generation happens immediately when issues are created by authorized users).
 
@@ -75,7 +75,7 @@ schedule:
   - cron: '0 9 * * *'
 ```
 
-### Medium Post Settings
+### LinkedIn Post Settings
 
 In `.github/workflows/publish-posts.yml`, you can customize:
 
@@ -101,7 +101,7 @@ Edit the prompt in the "Generate tech posts" step to control how the AI writes:
 
 1. **Never commit secrets** - Always use GitHub Secrets
 2. **Rotate tokens regularly** - Update API keys periodically
-3. **Monitor usage** - Check OpenAI and Medium dashboards for unusual activity
+3. **Monitor usage** - Check OpenAI and LinkedIn dashboards for unusual activity
 4. **Limit repository access** - Only grant push access to trusted users
 5. **Review generated content** - Consider using 'draft' mode initially to review before publishing
 
@@ -118,10 +118,10 @@ Edit the prompt in the "Generate tech posts" step to control how the AI writes:
 - Limit the number of issues processed per run
 - Reduce max_tokens in the API call
 
-### Medium
-- Medium publishing is free
+### LinkedIn
+- LinkedIn publishing is free
 - No API usage fees
-- Consider Medium Partner Program for monetization
+- Consider LinkedIn Partner Program for monetization
 
 ## Troubleshooting
 
@@ -136,11 +136,11 @@ Edit the prompt in the "Generate tech posts" step to control how the AI writes:
 - Ensure you have available credits
 - Check rate limits haven't been exceeded
 
-### Issue: Medium publishing fails
+### Issue: LinkedIn publishing fails
 - Verify token is valid
 - Check token hasn't been revoked
 - Ensure token has write permissions
-- Verify Medium account is in good standing
+- Verify LinkedIn account is in good standing
 
 ### Issue: Permission denied
 - Check workflow permissions are "Read and write"
@@ -152,5 +152,5 @@ Edit the prompt in the "Generate tech posts" step to control how the AI writes:
 For issues or questions:
 1. Check the Actions logs for detailed error messages
 2. Review this configuration guide
-3. Check OpenAI and Medium API documentation
+3. Check OpenAI and LinkedIn API documentation
 4. Create an issue in this repository for help

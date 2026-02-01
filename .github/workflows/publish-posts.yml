@@ -1,4 +1,4 @@
-name: Publish Tech Posts to Medium
+name: Publish Tech Posts to LinkedIn
 
 on:
   schedule:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  publish-to-medium:
+  publish-to-linkedin:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -28,9 +28,9 @@ jobs:
         run: |
           pip install requests
 
-      - name: Publish to Medium
+      - name: Publish to LinkedIn
         env:
-          MEDIUM_API_TOKEN: ${{ secrets.MEDIUM_API_TOKEN }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
         run: |
           python3 << 'PYTHON_SCRIPT'
           import os
@@ -39,10 +39,10 @@ jobs:
           import re
           import requests
 
-          medium_token = os.environ.get('MEDIUM_API_TOKEN')
+          linkedin_token = os.environ.get('LINKEDIN_ACCESS_TOKEN')
 
-          if not medium_token:
-              print("MEDIUM_API_TOKEN not set. Skipping publishing.")
+          if not linkedin_token:
+              print("LINKEDIN_ACCESS_TOKEN not set. Skipping publishing.")
               exit(0)
 
           # Find generated posts that haven't been published
@@ -61,20 +61,23 @@ jobs:
 
           print(f"Found {len(to_publish)} post(s) to publish")
 
-          # Get Medium user ID
+          # Get LinkedIn user profile (person URN)
           headers = {
-              'Authorization': f'Bearer {medium_token}',
+              'Authorization': f'Bearer {linkedin_token}',
               'Content-Type': 'application/json',
-              'Accept': 'application/json'
+              'X-Restli-Protocol-Version': '2.0.0'
           }
 
           try:
-              user_response = requests.get('https://api.medium.com/v1/me', headers=headers)
+              user_response = requests.get('https://api.linkedin.com/v2/me', headers=headers)
               user_response.raise_for_status()
-              user_id = user_response.json()['data']['id']
-              print(f"Medium user ID: {user_id}")
+              user_data = user_response.json()
+              person_urn = f"urn:li:person:{user_data['id']}"
+              print(f"LinkedIn Person URN: {person_urn}")
           except Exception as e:
-              print(f"Error getting Medium user: {e}")
+              print(f"Error getting LinkedIn user: {e}")
+              if hasattr(e, 'response'):
+                  print(f"Response: {e.response.text if hasattr(e.response, 'text') else e.response}")
               exit(1)
 
           # Publish each post
@@ -95,29 +98,59 @@ jobs:
               lines = post_content.split('\n')
               title = lines[0].replace('#', '').strip() if lines else 'Tech Post'
 
-              # Prepare Medium post
+              # Convert markdown to plain text for LinkedIn
+              # Remove markdown formatting but keep the structure
+              text_content = post_content
+              # Remove markdown headers
+              text_content = re.sub(r'^#{1,6}\s+', '', text_content, flags=re.MULTILINE)
+              # Remove markdown bold/italic
+              text_content = re.sub(r'\*\*([^*]+)\*\*', r'\1', text_content)
+              text_content = re.sub(r'\*([^*]+)\*', r'\1', text_content)
+              text_content = re.sub(r'__([^_]+)__', r'\1', text_content)
+              text_content = re.sub(r'_([^_]+)_', r'\1', text_content)
+              # Remove code blocks markers but keep content
+              text_content = re.sub(r'```[a-z]*\n', '', text_content)
+              text_content = re.sub(r'```', '', text_content)
+              # Remove inline code markers
+              text_content = re.sub(r'`([^`]+)`', r'\1', text_content)
+              
+              # LinkedIn has a 3000 character limit for posts
+              # Truncate if needed
+              if len(text_content) > 2900:
+                  text_content = text_content[:2900] + '...\n\n[Read more on GitHub]'
+
+              # Prepare LinkedIn post using UGC Posts API
               post_data = {
-                  'title': title,
-                  'contentFormat': 'markdown',
-                  'content': post_content,
-                  'publishStatus': 'public',
-                  'tags': ['technology', 'programming', 'software-development']
+                  "author": person_urn,
+                  "lifecycleState": "PUBLISHED",
+                  "specificContent": {
+                      "com.linkedin.ugc.ShareContent": {
+                          "shareCommentary": {
+                              "text": text_content
+                          },
+                          "shareMediaCategory": "NONE"
+                      }
+                  },
+                  "visibility": {
+                      "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+                  }
               }
 
               try:
                   publish_response = requests.post(
-                      f'https://api.medium.com/v1/users/{user_id}/posts',
+                      'https://api.linkedin.com/v2/ugcPosts',
                       headers=headers,
                       json=post_data
                   )
                   publish_response.raise_for_status()
                   
                   result = publish_response.json()
-                  post_url = result['data']['url']
+                  post_id = result.get('id', 'unknown')
+                  # LinkedIn doesn't return a direct URL, construct an estimate
+                  post_url = f"https://www.linkedin.com/feed/update/{post_id}/"
                   print(f"Published successfully: {post_url}")
                   
                   # Update post status - use regex to only replace in frontmatter
-                  import re
                   updated_content = re.sub(
                       r'^status:\s*generated\s*$',
                       f'status: published\npublished_url: {post_url}',
@@ -131,7 +164,8 @@ jobs:
               except Exception as e:
                   print(f"Error publishing {post_file}: {e}")
                   if hasattr(e, 'response'):
-                      print(f"Response: {e.response.text}")
+                      print(f"Response status: {e.response.status_code if hasattr(e.response, 'status_code') else 'unknown'}")
+                      print(f"Response text: {e.response.text if hasattr(e.response, 'text') else 'no text'}")
                   continue
 
           print("\nPublishing completed")

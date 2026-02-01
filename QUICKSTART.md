@@ -13,7 +13,7 @@ Get your automated tech blog up and running in 5 minutes!
 4. Copy the key (starts with `sk-`)
 5. Save it somewhere safe
 
-#### Medium API Token
+#### LinkedIn API Token
 1. Go to https://medium.com/me/settings/security
 2. Scroll to **"Integration tokens"**
 3. Enter description: `Tech Post Publisher`
@@ -30,8 +30,8 @@ Get your automated tech blog up and running in 5 minutes!
    - Value: [paste your OpenAI key]
    - Click **"Add secret"**
 5. Add second secret:
-   - Name: `MEDIUM_API_TOKEN`
-   - Value: [paste your Medium token]
+   - Name: `LINKEDIN_ACCESS_TOKEN`
+   - Value: [paste your LinkedIn token]
    - Click **"Add secret"**
 
 **Optional - Authorize Additional Users:**
@@ -64,17 +64,17 @@ If you skip this, only the repository owner can trigger AI generation. ✅ **Rec
    ## Testing the System
    
    This is my first automated tech post. I'm testing the GitHub Actions workflow
-   that captures issues and transforms them into Medium blog posts using AI.
+   that captures issues and transforms them into LinkedIn blog posts using AI.
    
    **What this system does:**
    - Automatically saves issues to the repository
    - Uses GPT-4 to generate comprehensive blog posts immediately
-   - Publishes to Medium daily
+   - Publishes to LinkedIn daily
    
    **How it works:**
    1. I create an issue (like this one)
    2. GitHub Actions captures it and generates AI post immediately
-   3. Daily workflow publishes generated posts to Medium
+   3. Daily workflow publishes generated posts to LinkedIn
    
    Pretty cool automation! 🚀
    ```
@@ -95,18 +95,18 @@ If you skip this, only the repository owner can trigger AI generation. ✅ **Rec
    - `issues/` directory has your issue file
    - `posts/` directory has the generated post
 
-### Test Medium Publishing (Manual)
+### Test LinkedIn Publishing (Manual)
 
 1. Go to **Actions** tab
-2. Click **"Publish Tech Posts to Medium"** workflow
+2. Click **"Publish Tech Posts to LinkedIn"** workflow
 3. Click **"Run workflow"** button
 4. Select your branch (usually `main`)
 5. Click **"Run workflow"**
 6. Wait 1-2 minutes for completion
 7. Check workflow logs to see:
-   - ✓ Post published to Medium
+   - ✓ Post published to LinkedIn
 
-### Check Your Medium Account
+### Check Your LinkedIn Account
 
 1. Go to https://medium.com/me/stories
 2. You should see your new published post! 🎉
@@ -127,7 +127,7 @@ The system automatically:
 - Saves your issue
 - **Immediately generates an AI-powered blog post**
 - Commits both to the repository
-- Publishes to Medium daily at 9 AM UTC
+- Publishes to LinkedIn daily at 9 AM UTC
 - Updates you with the published URL
 
 ## 📱 Pro Tips
@@ -162,7 +162,7 @@ schedule:
 
 Need to publish immediately?
 1. Go to **Actions** tab
-2. Select **"Publish Tech Posts to Medium"**
+2. Select **"Publish Tech Posts to LinkedIn"**
 3. Click **"Run workflow"**
 
 ## 🔧 Troubleshooting
@@ -176,10 +176,10 @@ Need to publish immediately?
 - ✅ Verify you have GPT-4 access
 - ✅ Check OpenAI account has credits
 
-### "Medium publishing failed"
+### "LinkedIn publishing failed"
 - ✅ Check token is correct in Secrets
 - ✅ Verify token hasn't been revoked
-- ✅ Check Medium account is active
+- ✅ Check LinkedIn account is active
 
 ### "Permission denied"
 - ✅ Enable "Read and write permissions"
@@ -199,13 +199,13 @@ Need to publish immediately?
 - Daily post = ~$1.50 - $4.50/month
 - Use GPT-3.5-turbo for 90% cost reduction
 
-**Medium:**
+**LinkedIn:**
 - Free! No API costs
-- Consider Medium Partner Program for earnings
+- Consider LinkedIn Partner Program for earnings
 
 ## 🎉 You're Ready!
 
-Your automated tech blog is now running. Every issue you create will become a published Medium post. 
+Your automated tech blog is now running. Every issue you create will become a published LinkedIn post. 
 
 **Start creating issues and watch your blog grow automatically!** 🚀
 

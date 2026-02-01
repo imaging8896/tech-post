@@ -24,8 +24,8 @@ This document outlines security best practices and considerations for the Tech P
 - Monitor usage regularly
 - **Protected by authorized users list** - Only authorized users can trigger API calls
 
-**Medium API Token:**
-- Has same permissions as your Medium account
+**LinkedIn API Token:**
+- Has same permissions as your LinkedIn account
 - Can publish posts on your behalf
 - Can be revoked at any time
 - Create a dedicated token for this use
@@ -144,7 +144,7 @@ If adding new actions:
 **Where:**
 - In your GitHub repository (public or private based on repo settings)
 - Sent to OpenAI API for processing
-- Published to Medium (public)
+- Published to LinkedIn (public)
 
 **Privacy Considerations:**
 - Don't include sensitive information in issues
@@ -160,10 +160,10 @@ If adding new actions:
 - Follow OpenAI's data usage policy
 - Data retention per OpenAI's terms
 
-**Medium:**
+**LinkedIn:**
 - Generated posts are published publicly
-- Associated with your Medium account
-- Subject to Medium's terms of service
+- Associated with your LinkedIn account
+- Subject to LinkedIn's terms of service
 
 ## Rate Limiting and Abuse Prevention
 
@@ -207,12 +207,12 @@ Optimize usage:
 5. Check OpenAI usage logs for unauthorized activity
 6. Contact OpenAI support if needed
 
-**Medium Token:**
+**LinkedIn Token:**
 1. Go to https://medium.com/me/settings/security
 2. Revoke the compromised token
 3. Create a new integration token
 4. Update GitHub Secret
-5. Check Medium posts for unauthorized publications
+5. Check LinkedIn posts for unauthorized publications
 
 **GitHub Secrets:**
 1. Rotate the compromised secret
@@ -227,7 +227,7 @@ Optimize usage:
 Weekly:
 - Review workflow run logs
 - Check OpenAI usage and costs
-- Verify Medium publications
+- Verify LinkedIn publications
 - Review repository access
 
 Monthly:
@@ -241,7 +241,7 @@ Monthly:
 Consider setting up:
 - OpenAI spending alerts
 - GitHub Actions failure notifications
-- Medium email notifications for new posts
+- LinkedIn email notifications for new posts
 
 ## Compliance
 
@@ -292,7 +292,7 @@ If you discover a security vulnerability:
 
 - [GitHub Actions Security Best Practices](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
 - [OpenAI API Safety Best Practices](https://platform.openai.com/docs/guides/safety-best-practices)
-- [Medium API Terms of Service](https://github.com/Medium/medium-api-docs)
+- [LinkedIn API Terms of Service](https://github.com/LinkedIn/medium-api-docs)
 - [OWASP API Security Top 10](https://owasp.org/www-project-api-security/)
 
 ## Updates
