@@ -139,8 +139,9 @@ Simply create a new issue in this repository:
 
 The workflow will automatically:
 - Capture the issue to the repository
-- **Immediately generate an AI-powered tech post**
-- Commit both the issue and generated post
+- **Immediately generate an AI-powered tech post in Traditional Chinese** (專有名詞可使用英文)
+- If the content exceeds LinkedIn's 3000 character limit, it will be split into multiple posts
+- Commit both the issue and generated post(s)
 - (Post will be published to LinkedIn the next day at 9 AM UTC)
 
 ### Manual Trigger
@@ -162,8 +163,8 @@ tech-post/
 │       └── publish-posts.yml      # Publishes generated posts to LinkedIn daily
 ├── issues/                         # Stored issues (auto-generated)
 │   └── issue-{number}.md
-├── posts/                          # Generated tech posts (auto-generated)
-│   └── post-{number}-{date}.md
+├── posts/                          # Generated tech posts (auto-generated, in Traditional Chinese)
+│   └── post-{number}-{date}.md     # Single post, or post-{number}-{date}-part{n}.md for split posts
 ├── LICENSE
 └── README.md
 ```
@@ -177,10 +178,11 @@ tech-post/
   1. **Check author authorization** - Verifies if issue author is authorized
   2. **If authorized**: 
      - Saves issue content to `issues/issue-{number}.md`
-     - Immediately generates AI blog post using OpenAI GPT-4
-     - Saves generated post to `posts/post-{number}-{date}.md`
+     - Immediately generates AI blog post in **Traditional Chinese** using OpenAI GPT-4 (專有名詞可使用英文)
+     - If content exceeds 3000 characters (LinkedIn limit), splits into multiple posts
+     - Saves generated post(s) to `posts/post-{number}-{date}.md` or `posts/post-{number}-{date}-part{n}.md`
      - Updates issue status to "generated"
-     - Commits and pushes both files
+     - Commits and pushes all files
   3. **If unauthorized**:
      - Does NOT save issue to repository
      - Does NOT generate AI post (saves tokens!)
