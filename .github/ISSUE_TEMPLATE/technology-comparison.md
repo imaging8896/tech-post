@@ -6,33 +6,19 @@ labels: ['blog-post', 'comparison']
 assignees: ''
 ---
 
-## Technologies Being Compared
-List the options you're comparing:
-- 
-- 
+**Technologies Being Compared:**
+List the options you're comparing.
 
-## Use Case
+**Use Case:**
 What problem are you trying to solve?
 
-## Comparison Criteria
+**Comparison Criteria:**
 What factors matter for your decision?
-1. 
-2. 
-3. 
 
-## Analysis
+**Analysis:**
+Compare each option across your criteria.
 
-### Option 1:
-- ✅ 
-- ❌ 
-
-### Option 2:
-- ✅ 
-- ❌ 
-
-<!-- Add more options as needed -->
-
-## Recommendation
+**Recommendation:**
 Which one did you choose and why?
 
 ---

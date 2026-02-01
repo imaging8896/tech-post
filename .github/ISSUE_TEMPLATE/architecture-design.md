@@ -6,31 +6,22 @@ labels: ['blog-post', 'architecture']
 assignees: ''
 ---
 
-## Context
+**Context:**
 What system or feature were you building?
 
-## Requirements
+**Requirements:**
 What did it need to do?
-- 
-- 
-- 
 
-## Design Decisions
+**Design Decisions:**
 What patterns or architectures did you consider?
 
-## Implementation
+**Implementation:**
 How did you build it?
 
-```
-# Add your code here
-```
-
-## Trade-offs
+**Trade-offs:**
 What compromises did you make and why?
-- ✅ 
-- ❌ 
 
-## Results
+**Results:**
 How did it turn out?
 
 ---

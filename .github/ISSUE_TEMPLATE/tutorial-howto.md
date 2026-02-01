@@ -6,34 +6,21 @@ labels: ['blog-post', 'tutorial']
 assignees: ''
 ---
 
-## Overview
+**Overview:**
 Brief description of what you'll teach.
 
-## Prerequisites
-What the reader needs to know or have installed:
-- 
-- 
-- 
+**Prerequisites:**
+What the reader needs to know or have installed.
 
-## Step-by-Step Guide
+**Step-by-Step Guide:**
+1. First step
+2. Second step
+3. etc.
 
-### Step 1: 
-Description and code/commands
+**Common Pitfalls:**
+What to watch out for.
 
-### Step 2:
-Description and code/commands
-
-### Step 3:
-Description and code/commands
-
-<!-- Add more steps as needed -->
-
-## Common Pitfalls
-What to watch out for:
-- 
-- 
-
-## Conclusion
+**Conclusion:**
 Summary and next steps.
 
 ---

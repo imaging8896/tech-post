@@ -6,26 +6,26 @@ labels: ['blog-post', 'problem-solution']
 assignees: ''
 ---
 
-## Problem Context
+**Problem Context:**
 Describe the situation where you encountered the problem.
 
-## The Problem
+**The Problem:**
 Clearly state what the issue was.
 
-## Investigation
+**Investigation:**
 Explain how you investigated or debugged the problem.
 
-## Solution
+**Solution:**
 Describe how you solved it.
 
-## Code/Configuration
+**Code/Configuration:**
 Include relevant code snippets or configuration changes.
 
 ```
 # Add your code here
 ```
 
-## Lessons Learned
+**Lessons Learned:**
 What did you learn from this experience?
 
 ---
