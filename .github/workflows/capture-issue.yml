@@ -1,0 +1,232 @@
+name: Capture Issue and Generate Post
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  capture-and-generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if author is authorized
+        id: check_author
+        env:
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          # List of authorized users (comma-separated)
+          # By default, only the repository owner is authorized
+          AUTHORIZED_USERS="${REPO_OWNER}"
+          
+          # You can add more users by setting a repository secret AUTHORIZED_USERS
+          # Format: "user1,user2,user3"
+          if [ -n "${{ secrets.AUTHORIZED_USERS }}" ]; then
+            AUTHORIZED_USERS="${{ secrets.AUTHORIZED_USERS }}"
+          fi
+          
+          echo "Issue author: ${ISSUE_AUTHOR}"
+          echo "Authorized users: ${AUTHORIZED_USERS}"
+          
+          # Check if author is in the authorized list
+          if echo "${AUTHORIZED_USERS}" | tr ',' '\n' | grep -qx "${ISSUE_AUTHOR}"; then
+            echo "✓ Author is authorized for AI generation"
+            echo "authorized=true" >> $GITHUB_OUTPUT
+          else
+            echo "✗ Author is NOT authorized for AI generation"
+            echo "⚠️  Issue will NOT be saved to the repository to save API tokens"
+            echo "⚠️  Only issues from authorized users are committed"
+            echo "authorized=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Save issue to file
+        if: steps.check_author.outputs.authorized == 'true'
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_CREATED_AT: ${{ github.event.issue.created_at }}
+        run: |
+          # Create issue directory
+          mkdir -p issues
+          
+          # Save issue as markdown with status "pending"
+          cat > "issues/issue-${ISSUE_NUMBER}.md" << 'ISSUE_EOF'
+          ---
+          issue_number: ${{ github.event.issue.number }}
+          title: "${{ github.event.issue.title }}"
+          author: ${{ github.event.issue.user.login }}
+          created_at: ${{ github.event.issue.created_at }}
+          status: pending
+          ---
+
+          # ${{ github.event.issue.title }}
+
+          **Issue #${{ github.event.issue.number }}**
+          **Author:** ${{ github.event.issue.user.login }}
+          **Created:** ${{ github.event.issue.created_at }}
+
+          ## Description
+
+          ${{ github.event.issue.body }}
+          ISSUE_EOF
+
+      - name: Set up Python
+        if: steps.check_author.outputs.authorized == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        if: steps.check_author.outputs.authorized == 'true'
+        run: |
+          pip install openai pyyaml
+
+      - name: Generate AI post
+        if: steps.check_author.outputs.authorized == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import re
+          from datetime import datetime
+
+          # Check for OpenAI API key
+          openai_key = os.environ.get('OPENAI_API_KEY')
+          issue_number = os.environ.get('ISSUE_NUMBER')
+
+          if not openai_key:
+              print("Warning: OPENAI_API_KEY not set. Skipping AI generation.")
+              exit(0)
+
+          # Import OpenAI
+          try:
+              from openai import OpenAI
+              client = OpenAI(api_key=openai_key)
+          except ImportError:
+              print("OpenAI library not available")
+              exit(1)
+
+          # Read the issue file
+          issue_file = f'issues/issue-{issue_number}.md'
+          
+          try:
+              with open(issue_file, 'r') as f:
+                  content = f.read()
+          except FileNotFoundError:
+              print(f"Issue file not found: {issue_file}")
+              exit(1)
+
+          # Extract metadata using YAML parsing
+          import yaml
+          
+          # Split frontmatter from content
+          if content.startswith('---'):
+              parts = content.split('---', 2)
+              if len(parts) >= 3:
+                  try:
+                      frontmatter = yaml.safe_load(parts[1])
+                      title = frontmatter.get('title', 'Untitled')
+                  except yaml.YAMLError:
+                      # Fallback to regex if YAML parsing fails
+                      match = re.search(r'title:\s*"?(.*?)"?\s*$', content, re.MULTILINE)
+                      title = match.group(1) if match else 'Untitled'
+              else:
+                  title = 'Untitled'
+          else:
+              title = 'Untitled'
+
+          print(f"Generating AI post for issue #{issue_number}: {title}")
+
+          # Generate tech post using OpenAI
+          prompt = f"""You are a technical writer. Based on the following issue, create a comprehensive, well-structured technical blog post suitable for Medium.
+
+          Issue Content:
+          {content}
+
+          Please write a detailed technical post that:
+          1. Has an engaging title
+          2. Includes an introduction
+          3. Explains the technical problem or topic
+          4. Provides solutions, code examples, or insights
+          5. Includes a conclusion
+          6. Is formatted in Markdown
+
+          Make it informative and professional."""
+
+          try:
+              response = client.chat.completions.create(
+                  model="gpt-4",
+                  messages=[
+                      {"role": "system", "content": "You are a technical writer who creates engaging blog posts."},
+                      {"role": "user", "content": prompt}
+                  ],
+                  max_tokens=2000,
+                  temperature=0.7
+              )
+              
+              tech_post = response.choices[0].message.content
+              
+              # Save the generated post
+              post_filename = f"posts/post-{issue_number}-{datetime.now().strftime('%Y%m%d')}.md"
+              os.makedirs('posts', exist_ok=True)
+              
+              # Prepare frontmatter using YAML for proper escaping
+              frontmatter_data = {
+                  'issue_number': int(issue_number),
+                  'original_title': title,
+                  'generated_at': datetime.now().isoformat(),
+                  'status': 'generated'
+              }
+              
+              with open(post_filename, 'w') as f:
+                  f.write("---\n")
+                  f.write(yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True))
+                  f.write("---\n\n")
+                  f.write(tech_post)
+              
+              print(f"Generated post: {post_filename}")
+              
+              # Update issue status - use regex to only replace in frontmatter
+              updated_content = re.sub(
+                  r'^status:\s*pending\s*$',
+                  'status: generated',
+                  content,
+                  count=1,
+                  flags=re.MULTILINE
+              )
+              with open(issue_file, 'w') as f:
+                  f.write(updated_content)
+              
+              print("Issue status updated to 'generated'")
+              
+          except Exception as e:
+              print(f"Error generating post: {e}")
+              exit(1)
+          PYTHON_SCRIPT
+
+      - name: Commit and push changes
+        if: steps.check_author.outputs.authorized == 'true'
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add issues/ posts/
+          git commit -m "Add issue #${ISSUE_NUMBER} and AI-generated post: ${ISSUE_TITLE}" || echo "No changes to commit"
+          
+          # Push to main branch explicitly
+          git push origin main

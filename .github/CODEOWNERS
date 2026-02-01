@@ -1,0 +1,18 @@
+# Code Owners for tech-post repository
+# 
+# This file designates who must review and approve changes to different parts of the repository.
+# When a Pull Request modifies files in this repository, the designated code owners will 
+# automatically be requested as reviewers.
+#
+# Repository owner must review all changes
+* @imaging8896
+
+# Workflow files require extra scrutiny
+/.github/workflows/ @imaging8896
+
+# Documentation changes
+*.md @imaging8896
+
+# Security-sensitive files
+SECURITY.md @imaging8896
+BRANCH_PROTECTION.md @imaging8896

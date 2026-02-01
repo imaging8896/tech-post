@@ -1,0 +1,181 @@
+name: Publish Tech Posts to LinkedIn
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  publish-to-linkedin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+
+      - name: Publish to LinkedIn
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import json
+          import glob
+          import re
+          import requests
+
+          linkedin_token = os.environ.get('LINKEDIN_ACCESS_TOKEN')
+
+          if not linkedin_token:
+              print("LINKEDIN_ACCESS_TOKEN not set. Skipping publishing.")
+              exit(0)
+
+          # Find generated posts that haven't been published
+          post_files = glob.glob('posts/post-*.md')
+          to_publish = []
+
+          for post_file in post_files:
+              with open(post_file, 'r') as f:
+                  content = f.read()
+                  if 'status: generated' in content:
+                      to_publish.append(post_file)
+
+          if not to_publish:
+              print("No posts to publish")
+              exit(0)
+
+          print(f"Found {len(to_publish)} post(s) to publish")
+
+          # Get LinkedIn user profile (person URN)
+          headers = {
+              'Authorization': f'Bearer {linkedin_token}',
+              'Content-Type': 'application/json',
+              'X-Restli-Protocol-Version': '2.0.0'
+          }
+
+          try:
+              user_response = requests.get('https://api.linkedin.com/v2/me', headers=headers)
+              user_response.raise_for_status()
+              user_data = user_response.json()
+              person_urn = f"urn:li:person:{user_data['id']}"
+              print(f"LinkedIn Person URN: {person_urn}")
+          except Exception as e:
+              print(f"Error getting LinkedIn user: {e}")
+              if hasattr(e, 'response'):
+                  print(f"Response: {e.response.text if hasattr(e.response, 'text') else e.response}")
+              exit(1)
+
+          # Publish each post
+          for post_file in to_publish:
+              print(f"\nPublishing {post_file}...")
+              
+              with open(post_file, 'r') as f:
+                  content = f.read()
+
+              # Extract content after frontmatter
+              parts = content.split('---\n', 2)
+              if len(parts) >= 3:
+                  post_content = parts[2].strip()
+              else:
+                  post_content = content
+
+              # Extract title from content
+              lines = post_content.split('\n')
+              title = lines[0].replace('#', '').strip() if lines else 'Tech Post'
+
+              # Convert markdown to plain text for LinkedIn
+              # Remove markdown formatting but keep the structure
+              text_content = post_content
+              # Remove markdown headers
+              text_content = re.sub(r'^#{1,6}\s+', '', text_content, flags=re.MULTILINE)
+              # Remove markdown bold/italic
+              text_content = re.sub(r'\*\*([^*]+)\*\*', r'\1', text_content)
+              text_content = re.sub(r'\*([^*]+)\*', r'\1', text_content)
+              text_content = re.sub(r'__([^_]+)__', r'\1', text_content)
+              text_content = re.sub(r'_([^_]+)_', r'\1', text_content)
+              # Remove code blocks markers but keep content
+              text_content = re.sub(r'```[a-z]*\n', '', text_content)
+              text_content = re.sub(r'```', '', text_content)
+              # Remove inline code markers
+              text_content = re.sub(r'`([^`]+)`', r'\1', text_content)
+              
+              # LinkedIn has a 3000 character limit for posts
+              # Truncate if needed
+              if len(text_content) > 2900:
+                  text_content = text_content[:2900] + '...\n\n[Read more on GitHub]'
+
+              # Prepare LinkedIn post using UGC Posts API
+              post_data = {
+                  "author": person_urn,
+                  "lifecycleState": "PUBLISHED",
+                  "specificContent": {
+                      "com.linkedin.ugc.ShareContent": {
+                          "shareCommentary": {
+                              "text": text_content
+                          },
+                          "shareMediaCategory": "NONE"
+                      }
+                  },
+                  "visibility": {
+                      "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+                  }
+              }
+
+              try:
+                  publish_response = requests.post(
+                      'https://api.linkedin.com/v2/ugcPosts',
+                      headers=headers,
+                      json=post_data
+                  )
+                  publish_response.raise_for_status()
+                  
+                  result = publish_response.json()
+                  post_id = result.get('id', 'unknown')
+                  # LinkedIn doesn't return a direct URL, construct an estimate
+                  post_url = f"https://www.linkedin.com/feed/update/{post_id}/"
+                  print(f"Published successfully: {post_url}")
+                  
+                  # Update post status - use regex to only replace in frontmatter
+                  updated_content = re.sub(
+                      r'^status:\s*generated\s*$',
+                      f'status: published\npublished_url: {post_url}',
+                      content,
+                      count=1,
+                      flags=re.MULTILINE
+                  )
+                  with open(post_file, 'w') as f:
+                      f.write(updated_content)
+                  
+              except Exception as e:
+                  print(f"Error publishing {post_file}: {e}")
+                  if hasattr(e, 'response'):
+                      print(f"Response status: {e.response.status_code if hasattr(e.response, 'status_code') else 'unknown'}")
+                      print(f"Response text: {e.response.text if hasattr(e.response, 'text') else 'no text'}")
+                  continue
+
+          print("\nPublishing completed")
+          PYTHON_SCRIPT
+
+      - name: Commit and push updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add posts/
+          git commit -m "Update published post statuses" || echo "No changes to commit"
+          # Push to main branch explicitly
+          git push origin main
