@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 Read Template Guide
+    url: https://github.com/imaging8896/tech-post/blob/main/TEMPLATES.md
+    about: Need help choosing a template? Check out the complete guide with examples.
