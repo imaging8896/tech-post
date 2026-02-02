@@ -69,10 +69,10 @@ jobs:
           }
 
           try:
-              user_response = requests.get('https://api.linkedin.com/v2/me', headers=headers)
+              user_response = requests.get('https://api.linkedin.com/v2/userinfo', headers=headers)
               user_response.raise_for_status()
               user_data = user_response.json()
-              person_urn = f"urn:li:person:{user_data['id']}"
+              person_urn = f"urn:li:person:{user_data['sub']}"
               print(f"LinkedIn Person URN: {person_urn}")
           except Exception as e:
               print(f"Error getting LinkedIn user: {e}")
