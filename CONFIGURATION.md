@@ -120,12 +120,12 @@ Note: This workflow only publishes already-generated posts. To generate posts, c
 ## Customization Options
 
 ### Publication Schedule
-Default: Daily at 9 AM UTC
+Default: Daily at 9 AM Taiwan Time (UTC+8)
 
 To change, edit the cron expression in `.github/workflows/publish-posts.yml`:
 ```yaml
 schedule:
-  - cron: '0 9 * * *'
+  - cron: '0 1 * * *'  # 9 AM Taiwan Time (UTC+8)
 ```
 
 ### LinkedIn Post Settings

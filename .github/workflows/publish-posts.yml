@@ -2,8 +2,8 @@ name: Publish Tech Posts to LinkedIn
 
 on:
   schedule:
-    # Run daily at 9 AM UTC
-    - cron: '0 9 * * *'
+    # Run daily at 9 AM Taiwan Time (TST/UTC+8) = 1 AM UTC
+    - cron: '0 1 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
