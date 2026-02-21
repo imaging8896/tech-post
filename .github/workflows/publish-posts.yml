@@ -26,11 +26,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests
+          pip install requests pyyaml
 
       - name: Publish to LinkedIn
         env:
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           python3 << 'PYTHON_SCRIPT'
           import os
@@ -38,8 +39,10 @@ jobs:
           import glob
           import re
           import requests
+          import yaml
 
           linkedin_token = os.environ.get('LINKEDIN_ACCESS_TOKEN')
+          github_repository = os.environ.get('GITHUB_REPOSITORY', '')
 
           if not linkedin_token:
               print("LINKEDIN_ACCESS_TOKEN not set. Skipping publishing.")
@@ -93,6 +96,28 @@ jobs:
                   post_content = parts[2].strip()
               else:
                   post_content = content
+
+              # Parse frontmatter for multi-part post handling
+              frontmatter_data = {}
+              if len(parts) >= 3:
+                  try:
+                      frontmatter_data = yaml.safe_load(parts[1]) or {}
+                  except Exception:
+                      pass
+
+              post_part = frontmatter_data.get('part')
+              total_parts = frontmatter_data.get('total_parts')
+              issue_number = frontmatter_data.get('issue_number')
+              next_post_url = None
+
+              # Append next-post link for non-final parts of multi-part posts
+              if post_part is not None and total_parts is not None and issue_number is not None and post_part < total_parts:
+                  next_part = post_part + 1
+                  next_part_files = glob.glob(f'posts/post-{issue_number}-*-part{next_part}.md')
+                  if next_part_files:
+                      next_file = next_part_files[0].replace('\\', '/')
+                      next_post_url = f"https://github.com/{github_repository}/blob/main/{next_file}"
+                      post_content += f"\n\n👉 下一篇：[第 {next_part} 篇/共 {total_parts} 篇]({next_post_url})"
 
               # Extract title from content
               lines = post_content.split('\n')
@@ -151,9 +176,12 @@ jobs:
                   print(f"Published successfully: {post_url}")
                   
                   # Update post status - use regex to only replace in frontmatter
+                  status_replacement = f'status: published\npublished_url: {post_url}'
+                  if next_post_url:
+                      status_replacement += f'\nnext_post_url: {next_post_url}'
                   updated_content = re.sub(
                       r'^status:\s*generated\s*$',
-                      f'status: published\npublished_url: {post_url}',
+                      status_replacement,
                       content,
                       count=1,
                       flags=re.MULTILINE
