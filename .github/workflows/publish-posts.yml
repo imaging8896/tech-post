@@ -31,7 +31,6 @@ jobs:
       - name: Publish to LinkedIn
         env:
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           python3 << 'PYTHON_SCRIPT'
           import os
@@ -42,7 +41,6 @@ jobs:
           import yaml
 
           linkedin_token = os.environ.get('LINKEDIN_ACCESS_TOKEN')
-          github_repository = os.environ.get('GITHUB_REPOSITORY', '')
 
           if not linkedin_token:
               print("LINKEDIN_ACCESS_TOKEN not set. Skipping publishing.")
@@ -55,8 +53,20 @@ jobs:
           for post_file in post_files:
               with open(post_file, 'r') as f:
                   content = f.read()
-                  if 'status: generated' in content:
-                      to_publish.append(post_file)
+              if 'status: generated' in content:
+                  frontmatter_parts = content.split('---\n', 2)
+                  frontmatter = {}
+                  if len(frontmatter_parts) >= 3:
+                      try:
+                          frontmatter = yaml.safe_load(frontmatter_parts[1]) or {}
+                      except Exception:
+                          pass
+                  to_publish.append((post_file, frontmatter.get('issue_number', 0), frontmatter.get('part', 0)))
+
+          # Sort: publish higher-numbered parts first so their LinkedIn URLs are
+          # available when processing earlier parts that need the next-post link
+          to_publish.sort(key=lambda x: (x[1], x[2]), reverse=True)
+          to_publish = [x[0] for x in to_publish]
 
           if not to_publish:
               print("No posts to publish")
@@ -82,6 +92,9 @@ jobs:
               if hasattr(e, 'response'):
                   print(f"Response: {e.response.text if hasattr(e.response, 'text') else e.response}")
               exit(1)
+
+          # Track LinkedIn URLs published in this run: {(issue_number, part): url}
+          published_urls = {}
 
           # Publish each post
           for post_file in to_publish:
@@ -113,10 +126,20 @@ jobs:
               # Append next-post link for non-final parts of multi-part posts
               if post_part is not None and total_parts is not None and issue_number is not None and post_part < total_parts:
                   next_part = post_part + 1
-                  next_part_files = glob.glob(f'posts/post-{issue_number}-*-part{next_part}.md')
-                  if next_part_files:
-                      next_file = next_part_files[0].replace('\\', '/')
-                      next_post_url = f"https://github.com/{github_repository}/blob/main/{next_file}"
+                  # Use LinkedIn URL of next part: check this run's dict first,
+                  # then fall back to published_url already stored in that file
+                  next_post_url = published_urls.get((issue_number, next_part))
+                  if not next_post_url:
+                      next_part_files = glob.glob(f'posts/post-{issue_number}-*-part{next_part}.md')
+                      if next_part_files:
+                          with open(next_part_files[0], 'r') as nf:
+                              next_frontmatter_parts = nf.read().split('---\n', 2)
+                          if len(next_frontmatter_parts) >= 3:
+                              try:
+                                  next_post_url = (yaml.safe_load(next_frontmatter_parts[1]) or {}).get('published_url')
+                              except Exception:
+                                  pass
+                  if next_post_url:
                       post_content += f"\n\n👉 下一篇：[第 {next_part} 篇/共 {total_parts} 篇]({next_post_url})"
 
               # Extract title from content
@@ -174,6 +197,8 @@ jobs:
                   # LinkedIn doesn't return a direct URL, construct an estimate
                   post_url = f"https://www.linkedin.com/feed/update/{post_id}/"
                   print(f"Published successfully: {post_url}")
+                  if post_part is not None and issue_number is not None:
+                      published_urls[(issue_number, post_part)] = post_url
                   
                   # Update post status - use regex to only replace in frontmatter
                   status_replacement = f'status: published\npublished_url: {post_url}'
