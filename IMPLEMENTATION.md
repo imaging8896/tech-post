@@ -155,15 +155,24 @@ This pull request implements a complete automated system for capturing GitHub is
      - Extract title and content
      - Convert markdown to plain text (LinkedIn requirement)
      - Enforce 3000 character limit
-     - Create UGC post via LinkedIn v2 API
+     - **Check for image URLs in frontmatter (optional)**
+     - **If images exist: Upload to LinkedIn via Assets API**
+     - Create UGC post via LinkedIn v2 API (with or without images)
      - Update post status to "published"
      - Add published_url to frontmatter
   7. Commit updates to posts/ directory only
   8. Push to origin main
 - **API:** LinkedIn v2 UGC Posts API
   - Endpoint: `https://api.linkedin.com/v2/ugcPosts`
+  - **Image Upload:** `https://api.linkedin.com/v2/assets?action=registerUpload`
   - Header: `X-Restli-Protocol-Version: 2.0.0`
   - Auth: Bearer token (LINKEDIN_ACCESS_TOKEN)
+- **Image Support:**
+  - Images attached to GitHub Issues are automatically detected
+  - Images are uploaded to LinkedIn using the Assets API
+  - Posts with images use `shareMediaCategory: "IMAGE"`
+  - Posts without images use `shareMediaCategory: "NONE"` (text-only)
+  - **Image support is optional** - posts work with or without images
 - **Permissions:** `contents: write` only
 - **Target Branch:** Explicitly `main`
 - **Status Flow:** generated → published
