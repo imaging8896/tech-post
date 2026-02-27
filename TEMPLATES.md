@@ -281,8 +281,32 @@ class OrderAggregate {
 3. **Include Details:** Version numbers, environment info, relevant logs
 4. **Tell a Story:** Walk through your thought process
 5. **Share Insights:** What did you learn? What surprised you?
-6. **Add Visuals:** Screenshots, diagrams, or architecture drawings (if applicable)
+6. **Add Images (Optional):** Attach screenshots, diagrams, or architecture drawings to include in your LinkedIn post
 7. **Use Code Blocks:** Format code properly with syntax highlighting
+
+## Adding Images to Your Posts (Optional)
+
+You can include images in your LinkedIn posts by attaching images to your GitHub Issue:
+
+1. **Drag & drop** images directly into the issue text area, or
+2. **Paste** images from clipboard (Ctrl+V / Cmd+V)
+
+GitHub will automatically upload the image and create a Markdown image link like:
+```markdown
+![image](https://github.com/user-attachments/assets/xxx-xxx-xxx)
+```
+
+**What happens:**
+- Images attached to issues are automatically detected
+- During publishing, images are uploaded to LinkedIn
+- Your LinkedIn post will display the images alongside your text content
+- **It's optional**: If no images are attached, your post will be published as text-only
+
+**Tips for images:**
+- Use clear, high-resolution screenshots or diagrams
+- Supported formats: PNG, JPEG, GIF
+- Multiple images can be attached
+- For multi-part posts, images are only included in the first part
 
 ## What Makes a Good Technical Post?
 
