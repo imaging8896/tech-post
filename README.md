@@ -16,8 +16,9 @@ This system enables you to:
 1. **Automatically capture issues** - Create GitHub issues about problems you've solved or interesting findings, and they're automatically saved to the repository
 2. **AI-generated tech posts** - Issues are transformed into comprehensive technical blog posts using OpenAI's GPT-4
 3. **Daily LinkedIn publishing** - Generated posts are automatically published to LinkedIn each day
-4. **Secure access control** - Only authorized accounts can push commits (configured via GitHub repository settings)
-5. **Token-saving authorization** - AI generation only runs for authorized users to prevent wasting OpenAI tokens
+4. **Optional image support** - Attach images to your issues to include them in your LinkedIn posts
+5. **Secure access control** - Only authorized accounts can push commits (configured via GitHub repository settings)
+6. **Token-saving authorization** - AI generation only runs for authorized users to prevent wasting OpenAI tokens
 
 ## How It Works
 
@@ -137,14 +138,28 @@ Simply create a new issue in this repository:
 1. Click on the "Issues" tab
 2. Click "New issue"
 3. Enter a title and description of the technical problem/solution
-4. Click "Submit new issue"
+4. **Optional: Attach images** by dragging & dropping or pasting them into the issue
+5. Click "Submit new issue"
 
 The workflow will automatically:
 - Capture the issue to the repository
 - **Immediately generate an AI-powered tech post in Traditional Chinese** (專有名詞可使用英文)
 - If the content exceeds LinkedIn's 3000 character limit, it will be split into multiple posts
+- **Upload attached images to LinkedIn** (if any images are included in the issue)
 - Commit both the issue and generated post(s)
 - (Post will be published to LinkedIn the next day at 9 AM UTC)
+
+### Adding Images to Posts (Optional)
+
+You can include images in your LinkedIn posts:
+
+1. **Drag & drop** images directly into the issue text area, or
+2. **Paste** images from clipboard (Ctrl+V / Cmd+V)
+
+GitHub will automatically create an image link. When the post is published:
+- Images are uploaded to LinkedIn via the Assets API
+- Your LinkedIn post displays images alongside the text
+- **It's optional**: Posts without images are published as text-only
 
 ### Manual Trigger
 

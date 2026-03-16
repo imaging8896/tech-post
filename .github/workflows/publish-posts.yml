@@ -46,6 +46,84 @@ jobs:
               print("LINKEDIN_ACCESS_TOKEN not set. Skipping publishing.")
               exit(0)
 
+          # LinkedIn API headers
+          headers = {
+              'Authorization': f'Bearer {linkedin_token}',
+              'Content-Type': 'application/json',
+              'X-Restli-Protocol-Version': '2.0.0'
+          }
+
+          def upload_image_to_linkedin(person_urn, image_url):
+              """
+              Upload an image to LinkedIn using the Assets API.
+              Returns the asset URN if successful, None otherwise.
+              
+              LinkedIn image upload process:
+              1. Register an upload request to get uploadUrl and asset URN
+              2. Download the image from source URL
+              3. Upload the image binary to LinkedIn's uploadUrl
+              4. Return the asset URN for use in post
+              """
+              try:
+                  # Step 1: Register upload request
+                  register_data = {
+                      "registerUploadRequest": {
+                          "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
+                          "owner": person_urn,
+                          "serviceRelationships": [
+                              {
+                                  "relationshipType": "OWNER",
+                                  "identifier": "urn:li:userGeneratedContent"
+                              }
+                          ]
+                      }
+                  }
+                  
+                  register_response = requests.post(
+                      'https://api.linkedin.com/v2/assets?action=registerUpload',
+                      headers=headers,
+                      json=register_data
+                  )
+                  register_response.raise_for_status()
+                  
+                  register_result = register_response.json()
+                  upload_url = register_result['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl']
+                  asset_urn = register_result['value']['asset']
+                  
+                  print(f"  Registered upload, asset: {asset_urn}")
+                  
+                  # Step 2: Download image from source URL
+                  image_response = requests.get(image_url, timeout=30)
+                  image_response.raise_for_status()
+                  image_data = image_response.content
+                  
+                  # Detect content type
+                  content_type = image_response.headers.get('Content-Type', 'image/png')
+                  if 'image/' not in content_type:
+                      content_type = 'image/png'
+                  
+                  print(f"  Downloaded image: {len(image_data)} bytes, type: {content_type}")
+                  
+                  # Step 3: Upload image binary to LinkedIn
+                  upload_headers = {
+                      'Authorization': f'Bearer {linkedin_token}',
+                      'Content-Type': content_type
+                  }
+                  
+                  upload_response = requests.put(
+                      upload_url,
+                      headers=upload_headers,
+                      data=image_data
+                  )
+                  upload_response.raise_for_status()
+                  
+                  print(f"  Image uploaded successfully")
+                  return asset_urn
+                  
+              except Exception as e:
+                  print(f"  Warning: Failed to upload image: {e}")
+                  return None
+
           # Find generated posts that haven't been published
           post_files = glob.glob('posts/post-*.md')
           to_publish = []
@@ -75,12 +153,6 @@ jobs:
           print(f"Found {len(to_publish)} post(s) to publish")
 
           # Get LinkedIn user profile (person URN)
-          headers = {
-              'Authorization': f'Bearer {linkedin_token}',
-              'Content-Type': 'application/json',
-              'X-Restli-Protocol-Version': '2.0.0'
-          }
-
           try:
               user_response = requests.get('https://api.linkedin.com/v2/userinfo', headers=headers)
               user_response.raise_for_status()
@@ -167,22 +239,70 @@ jobs:
               if len(text_content) > 2900:
                   text_content = text_content[:2900] + '...\n\n[Read more on GitHub]'
 
+              # Check for images in frontmatter (optional image support)
+              image_urls = frontmatter_data.get('image_urls', [])
+              uploaded_assets = []
+              
+              if image_urls:
+                  print(f"  Found {len(image_urls)} image(s) to upload")
+                  for img_url in image_urls:
+                      print(f"  Uploading: {img_url[:80]}...")
+                      asset_urn = upload_image_to_linkedin(person_urn, img_url)
+                      if asset_urn:
+                          uploaded_assets.append(asset_urn)
+              
               # Prepare LinkedIn post using UGC Posts API
-              post_data = {
-                  "author": person_urn,
-                  "lifecycleState": "PUBLISHED",
-                  "specificContent": {
-                      "com.linkedin.ugc.ShareContent": {
-                          "shareCommentary": {
-                              "text": text_content
+              if uploaded_assets:
+                  # Post WITH images
+                  media_title = title[:200] if title else "Tech Post"
+                  media_array = []
+                  for asset_urn in uploaded_assets:
+                      media_array.append({
+                          "status": "READY",
+                          "description": {
+                              "text": media_title
                           },
-                          "shareMediaCategory": "NONE"
+                          "media": asset_urn,
+                          "title": {
+                              "text": media_title
+                          }
+                      })
+                  
+                  post_data = {
+                      "author": person_urn,
+                      "lifecycleState": "PUBLISHED",
+                      "specificContent": {
+                          "com.linkedin.ugc.ShareContent": {
+                              "shareCommentary": {
+                                  "text": text_content
+                              },
+                              "shareMediaCategory": "IMAGE",
+                              "media": media_array
+                          }
+                      },
+                      "visibility": {
+                          "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
                       }
-                  },
-                  "visibility": {
-                      "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
                   }
-              }
+                  print(f"  Creating post with {len(uploaded_assets)} image(s)")
+              else:
+                  # Text-only post (no images or image upload failed)
+                  post_data = {
+                      "author": person_urn,
+                      "lifecycleState": "PUBLISHED",
+                      "specificContent": {
+                          "com.linkedin.ugc.ShareContent": {
+                              "shareCommentary": {
+                                  "text": text_content
+                              },
+                              "shareMediaCategory": "NONE"
+                          }
+                      },
+                      "visibility": {
+                          "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+                      }
+                  }
+                  print(f"  Creating text-only post")
 
               try:
                   publish_response = requests.post(

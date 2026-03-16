@@ -129,6 +129,16 @@ jobs:
               print(f"Issue file not found: {issue_file}")
               exit(1)
 
+          # Extract image URLs from Issue body (GitHub issue attachments)
+          # GitHub image attachments look like: ![image](https://github.com/user-attachments/assets/xxx)
+          # or: ![description](https://user-images.githubusercontent.com/xxx.png)
+          image_pattern = r'!\[.*?\]\((https://(?:github\.com/user-attachments/assets|user-images\.githubusercontent\.com)/[^\s\)]+)\)'
+          image_urls = re.findall(image_pattern, content)
+          if image_urls:
+              print(f"Found {len(image_urls)} image(s) in issue: {image_urls}")
+          else:
+              print("No images found in issue (posts will be text-only)")
+
           # Extract metadata using YAML parsing
           import yaml
           
@@ -213,6 +223,9 @@ jobs:
                           'part': i,
                           'total_parts': len(posts)
                       }
+                      # Add image URLs to frontmatter (only for first part to avoid duplicates)
+                      if i == 1 and image_urls:
+                          frontmatter_data['image_urls'] = image_urls
                       
                       with open(post_filename, 'w') as f:
                           f.write("---\n")
@@ -232,6 +245,9 @@ jobs:
                       'generated_at': datetime.now().isoformat(),
                       'status': 'generated'
                   }
+                  # Add image URLs to frontmatter if found
+                  if image_urls:
+                      frontmatter_data['image_urls'] = image_urls
                   
                   with open(post_filename, 'w') as f:
                       f.write("---\n")
