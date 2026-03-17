@@ -158,6 +158,7 @@ This pull request implements a complete automated system for capturing GitHub is
      - **Check for image URLs in frontmatter (optional)**
      - **If images exist: Upload to LinkedIn via Assets API**
      - Create UGC post via LinkedIn v2 API (with or without images)
+     - **Fallback: If images fail to include in post, add them as comments**
      - Update post status to "published"
      - Add published_url to frontmatter
   7. Commit updates to posts/ directory only
@@ -165,13 +166,15 @@ This pull request implements a complete automated system for capturing GitHub is
 - **API:** LinkedIn v2 UGC Posts API
   - Endpoint: `https://api.linkedin.com/v2/ugcPosts`
   - **Image Upload:** `https://api.linkedin.com/v2/assets?action=registerUpload`
+  - **Comments API:** `https://api.linkedin.com/v2/socialActions/{post}/comments`
   - Header: `X-Restli-Protocol-Version: 2.0.0`
   - Auth: Bearer token (LINKEDIN_ACCESS_TOKEN)
 - **Image Support:**
-  - Images attached to GitHub Issues are automatically detected
+  - Images attached to GitHub Issues are automatically detected (both Markdown and HTML formats)
   - Images are uploaded to LinkedIn using the Assets API
-  - Posts with images use `shareMediaCategory: "IMAGE"`
+  - Posts with images use `shareMediaCategory: "IMAGE"` for **expanded/full-width** display
   - Posts without images use `shareMediaCategory: "NONE"` (text-only)
+  - **Fallback:** If images can't be added to post, they are added as comments
   - **Image support is optional** - posts work with or without images
 - **Permissions:** `contents: write` only
 - **Target Branch:** Explicitly `main`

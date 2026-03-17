@@ -156,9 +156,10 @@ You can include images in your LinkedIn posts:
 1. **Drag & drop** images directly into the issue text area, or
 2. **Paste** images from clipboard (Ctrl+V / Cmd+V)
 
-GitHub will automatically create an image link. When the post is published:
+GitHub will automatically create an image link (either Markdown or HTML format). When the post is published:
 - Images are uploaded to LinkedIn via the Assets API
-- Your LinkedIn post displays images alongside the text
+- **Images are displayed expanded (full-width)** in your LinkedIn post for maximum visual impact
+- If image upload fails, images are automatically added as comments on the post as a fallback
 - **It's optional**: Posts without images are published as text-only
 
 ### Manual Trigger
