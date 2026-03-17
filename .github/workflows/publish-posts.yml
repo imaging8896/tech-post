@@ -359,8 +359,9 @@ jobs:
                   }
                   print(f"  Creating text-only post")
                   # If images were requested but all uploads failed, try to re-upload for comments
+                  # (retry may succeed due to transient network issues or rate limiting)
                   if failed_image_urls:
-                      print(f"  Will attempt to add {len(failed_image_urls)} failed image(s) as comments (fallback)")
+                      print(f"  Retrying upload for {len(failed_image_urls)} failed image(s) to add as comments (fallback)")
                       for img_url in failed_image_urls:
                           asset_urn = upload_image_to_linkedin(person_urn, img_url)
                           if asset_urn:
@@ -386,6 +387,8 @@ jobs:
                   if images_for_comments:
                       print(f"  Adding {len(images_for_comments)} image(s) as comments (fallback)...")
                       for i, asset_urn in enumerate(images_for_comments, 1):
+                          # Note: Using Traditional Chinese text ("附圖" = "attached image") 
+                          # to match the AI-generated post language (zh-TW)
                           comment_text = f"📷 附圖 {i}" if len(images_for_comments) > 1 else "📷 附圖"
                           add_image_comment_to_post(post_id, person_urn, asset_urn, comment_text)
                   
