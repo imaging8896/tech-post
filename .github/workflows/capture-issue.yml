@@ -130,10 +130,29 @@ jobs:
               exit(1)
 
           # Extract image URLs from Issue body (GitHub issue attachments)
-          # GitHub image attachments look like: ![image](https://github.com/user-attachments/assets/xxx)
-          # or: ![description](https://user-images.githubusercontent.com/xxx.png)
-          image_pattern = r'!\[.*?\]\((https://(?:github\.com/user-attachments/assets|user-images\.githubusercontent\.com)/[^\s\)]+)\)'
-          image_urls = re.findall(image_pattern, content)
+          # GitHub image attachments can be in two formats:
+          # 1. Markdown: ![image](https://github.com/user-attachments/assets/xxx)
+          #              ![description](https://user-images.githubusercontent.com/xxx.png)
+          # 2. HTML: <img ... src="https://github.com/user-attachments/assets/xxx" ... />
+          image_urls = []
+          
+          # Pattern 1: Markdown image syntax ![...](url)
+          markdown_pattern = r'!\[.*?\]\((https://(?:github\.com/user-attachments/assets|user-images\.githubusercontent\.com)/[^\s\)]+)\)'
+          image_urls.extend(re.findall(markdown_pattern, content))
+          
+          # Pattern 2: HTML img tag <img ... src="url" ... />
+          html_pattern = r'<img[^>]+src=["\']?(https://(?:github\.com/user-attachments/assets|user-images\.githubusercontent\.com)/[^\s"\'>\)]+)["\']?'
+          image_urls.extend(re.findall(html_pattern, content))
+          
+          # Remove duplicates while preserving order
+          seen = set()
+          unique_image_urls = []
+          for url in image_urls:
+              if url not in seen:
+                  seen.add(url)
+                  unique_image_urls.append(url)
+          image_urls = unique_image_urls
+          
           if image_urls:
               print(f"Found {len(image_urls)} image(s) in issue: {image_urls}")
           else:

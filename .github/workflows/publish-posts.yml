@@ -124,6 +124,55 @@ jobs:
                   print(f"  Warning: Failed to upload image: {e}")
                   return None
 
+          def add_image_comment_to_post(post_urn, person_urn, asset_urn, comment_text="📷 附圖"):
+              """
+              Add a comment with an image to an existing LinkedIn post.
+              This is a fallback when images can't be included in the main post.
+              
+              Args:
+                  post_urn: The URN of the post to comment on (e.g., urn:li:share:xxx or urn:li:ugcPost:xxx)
+                  person_urn: The URN of the person making the comment
+                  asset_urn: The URN of the uploaded image asset
+                  comment_text: Text to include with the image comment (default: "📷 附圖" meaning "attached image")
+                  
+              Returns:
+                  True if comment was added successfully, False otherwise
+              """
+              try:
+                  # LinkedIn comments API endpoint
+                  # Use socialActions for commenting on posts
+                  comment_url = f'https://api.linkedin.com/v2/socialActions/{post_urn}/comments'
+                  
+                  comment_data = {
+                      "actor": person_urn,
+                      "message": {
+                          "text": comment_text
+                      },
+                      "content": [
+                          {
+                              "entity": {
+                                  "digitalmediaAsset": asset_urn
+                              }
+                          }
+                      ]
+                  }
+                  
+                  comment_response = requests.post(
+                      comment_url,
+                      headers=headers,
+                      json=comment_data
+                  )
+                  comment_response.raise_for_status()
+                  
+                  print(f"  Added image comment successfully")
+                  return True
+                  
+              except Exception as e:
+                  print(f"  Warning: Failed to add image comment: {e}")
+                  if hasattr(e, 'response') and hasattr(e.response, 'text'):
+                      print(f"  Response: {e.response.text}")
+                  return False
+
           # Find generated posts that haven't been published
           post_files = glob.glob('posts/post-*.md')
           to_publish = []
@@ -242,6 +291,7 @@ jobs:
               # Check for images in frontmatter (optional image support)
               image_urls = frontmatter_data.get('image_urls', [])
               uploaded_assets = []
+              failed_image_urls = []  # Track URLs that failed to upload
               
               if image_urls:
                   print(f"  Found {len(image_urls)} image(s) to upload")
@@ -250,10 +300,15 @@ jobs:
                       asset_urn = upload_image_to_linkedin(person_urn, img_url)
                       if asset_urn:
                           uploaded_assets.append(asset_urn)
+                      else:
+                          failed_image_urls.append(img_url)
+              
+              # Track if images were requested but couldn't be included in the main post
+              images_for_comments = []
               
               # Prepare LinkedIn post using UGC Posts API
               if uploaded_assets:
-                  # Post WITH images
+                  # Post WITH images - images will be expanded/displayed prominently
                   media_title = title[:200] if title else "Tech Post"
                   media_array = []
                   for asset_urn in uploaded_assets:
@@ -284,9 +339,9 @@ jobs:
                           "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
                       }
                   }
-                  print(f"  Creating post with {len(uploaded_assets)} image(s)")
+                  print(f"  Creating post with {len(uploaded_assets)} expanded image(s)")
               else:
-                  # Text-only post (no images or image upload failed)
+                  # Text-only post (no images or all image uploads failed)
                   post_data = {
                       "author": person_urn,
                       "lifecycleState": "PUBLISHED",
@@ -303,6 +358,13 @@ jobs:
                       }
                   }
                   print(f"  Creating text-only post")
+                  # If images were requested but all uploads failed, try to re-upload for comments
+                  if failed_image_urls:
+                      print(f"  Will attempt to add {len(failed_image_urls)} failed image(s) as comments (fallback)")
+                      for img_url in failed_image_urls:
+                          asset_urn = upload_image_to_linkedin(person_urn, img_url)
+                          if asset_urn:
+                              images_for_comments.append(asset_urn)
 
               try:
                   publish_response = requests.post(
@@ -319,6 +381,13 @@ jobs:
                   print(f"Published successfully: {post_url}")
                   if post_part is not None and issue_number is not None:
                       published_urls[(issue_number, post_part)] = post_url
+                  
+                  # Fallback: Add images as comments if they couldn't be included in the main post
+                  if images_for_comments:
+                      print(f"  Adding {len(images_for_comments)} image(s) as comments (fallback)...")
+                      for i, asset_urn in enumerate(images_for_comments, 1):
+                          comment_text = f"📷 附圖 {i}" if len(images_for_comments) > 1 else "📷 附圖"
+                          add_image_comment_to_post(post_id, person_urn, asset_urn, comment_text)
                   
                   # Update post status - use regex to only replace in frontmatter
                   status_replacement = f'status: published\npublished_url: {post_url}'
