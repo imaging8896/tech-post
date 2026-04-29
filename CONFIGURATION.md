@@ -27,7 +27,8 @@ Your LinkedIn access token for publishing posts.
 2. Create an app or use existing app
 3. Request access to "Share on LinkedIn" product
 4. Configure OAuth 2.0 settings
-5. Generate access token with required scopes (r_liteprofile, w_member_social)
+5. Generate access token with **only** these scopes: `r_liteprofile`, `w_member_social`
+   > ⚠️ Do **not** include the `openid` scope. The workflow uses `/v2/me` (requires `r_liteprofile`) to look up your profile. Adding `openid` redirects the call to `/v2/userinfo`, which returns `403 ACCESS_DENIED` with a standard posting token.
 6. Copy the token
 7. Add it as a GitHub secret
 

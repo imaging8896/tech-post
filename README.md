@@ -67,7 +67,8 @@ Every day at 9 AM Taiwan Time (1 AM UTC, configurable):
    - Visit https://www.linkedin.com/developers/
    - Create an app or use existing app
    - Request access to "Share on LinkedIn" product
-   - Generate OAuth 2.0 access token with scopes: r_liteprofile, w_member_social
+   - Generate OAuth 2.0 access token with **only** these scopes: `r_liteprofile`, `w_member_social`
+     > ⚠️ Do **not** include the `openid` scope — it targets a different API endpoint (`/v2/userinfo`) that returns a 403 with a standard posting token
    - Copy the token
 
 4. **Configure Repository Permissions**:
