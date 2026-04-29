@@ -36,7 +36,7 @@ When you create a new issue in this repository:
 
 ### 2. Daily LinkedIn Publication Workflow
 
-Every day at 9 AM UTC (configurable):
+Every day at 9 AM Taiwan Time (1 AM UTC, configurable):
 - The workflow scans for generated posts in the `posts/` directory
 - Generated posts are published to LinkedIn via the LinkedIn API
 - Post status is updated to "published" with the LinkedIn URL
@@ -212,7 +212,7 @@ tech-post/
 
 ### Publish Tech Posts to LinkedIn (`publish-posts.yml`)
 
-- **Trigger**: Daily at 9 AM UTC (or manual)
+- **Trigger**: Daily at 9 AM Taiwan Time / 1 AM UTC (or manual)
 - **Actions**:
   - Finds generated posts (status: "generated")
   - Publishes posts to LinkedIn via API
@@ -240,21 +240,14 @@ Edit `.github/workflows/publish-posts.yml`:
 ```yaml
 on:
   schedule:
-    - cron: '0 9 * * *'  # Change this cron expression
+    - cron: '0 1 * * *'  # Change this cron expression
 ```
 
 Common cron patterns:
+- `0 1 * * *` - Daily at 9 AM Taiwan Time (1 AM UTC) — current default
 - `0 9 * * *` - Daily at 9 AM UTC
 - `0 9 * * 1` - Every Monday at 9 AM UTC
 - `0 9,21 * * *` - Twice daily at 9 AM and 9 PM UTC
-
-### Change LinkedIn Tags
-
-Edit the `tags` array in `.github/workflows/publish-posts.yml`:
-
-```python
-'tags': ['technology', 'programming', 'software-development']
-```
 
 ## Troubleshooting
 
@@ -264,6 +257,10 @@ Edit the `tags` array in `.github/workflows/publish-posts.yml`:
 2. Verify your LinkedIn API token is valid
 3. Check the Actions tab for workflow execution logs
 4. Ensure there are posts with status "generated" in the posts/ directory
+
+### LinkedIn 403 Error (userinfo endpoint)
+
+If you see `403 Forbidden` for `https://api.linkedin.com/v2/userinfo`, your token doesn't have the `openid` scope. The workflow uses `/v2/me` instead, which only requires `r_liteprofile`. Ensure your token was generated with at least the `r_liteprofile` and `w_member_social` scopes.
 
 ### Permission Errors
 
