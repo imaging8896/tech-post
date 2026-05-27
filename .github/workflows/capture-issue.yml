@@ -184,7 +184,14 @@ jobs:
           SPLIT_MARKER = '---SPLIT---'
 
           # Generate tech post using OpenAI
+          # Stop-slop writing guidelines (from https://github.com/hardikpandya/stop-slop)
+          # Eliminates predictable AI writing patterns from prose
+          with open('config/stop-slop-guidelines.md', 'r') as f:
+              stop_slop_guidelines = f.read()
+
           prompt = f"""你是一位專業的技術作家。請根據以下 Issue 內容，撰寫一篇結構完整、適合發佈於 LinkedIn 的繁體中文技術文章。
+
+          {stop_slop_guidelines}
 
           Issue 內容:
           {content}
@@ -200,6 +207,7 @@ jobs:
           8. **例外：專有名詞（如技術術語、產品名稱、程式語言名稱等）可以使用英文**
           9. **重要：LinkedIn 有 {LINKEDIN_CHAR_LIMIT} 字元限制，如果內容會超過此限制，請將文章拆分成多篇貼文，每篇貼文以「{SPLIT_MARKER}」分隔，並在每篇貼文開頭標註「(第 X 篇/共 Y 篇)」**
           10. **重要：每篇文章的最後一行必須加上「🤖 本文為 AI 產生的貼文」作為聲明**
+          11. **最重要：嚴格遵守上述寫作風格規則，消除所有 AI 寫作痕跡，讓文章讀起來自然、直接、像真人寫的**
 
           請確保內容專業且具有資訊價值。"""
 
@@ -207,7 +215,7 @@ jobs:
               response = client.chat.completions.create(
                   model="gpt-4",
                   messages=[
-                      {"role": "system", "content": "你是一位專業的技術作家，專門撰寫繁體中文的技術部落格文章。專有名詞可以使用英文。"},
+                      {"role": "system", "content": "你是一位專業的技術作家，專門撰寫繁體中文的技術部落格文章。專有名詞可以使用英文。你的寫作風格必須自然、直接、具體，像真人寫的文章。絕對不要使用典型的 AI 寫作模式：不要用填充詞句、不要用二元對比結構、不要用被動語態、不要用模糊宣言、不要用戲劇化片段、不要用修辭鋪墊。每個句子都要有明確的人做主語，使用主動語態，具體而非抽象。信任讀者的智慧，不要解釋顯而易見的事情。"},
                       {"role": "user", "content": prompt}
                   ],
                   max_tokens=4000,
