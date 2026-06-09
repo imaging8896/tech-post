@@ -183,39 +183,89 @@ jobs:
           LINKEDIN_CHAR_LIMIT = 3000
           SPLIT_MARKER = '---SPLIT---'
 
-          # Generate tech post using OpenAI
+          # Load LinkedIn post skill (.claude/skills/linkedin-post/)
+          # The skill is the source of truth for how to write LinkedIn posts.
+          # If skill files are missing, fall back to stop-slop-only behaviour.
+          skill_dir = '.claude/skills/linkedin-post'
+          skill_main = ''
+          hook_formulas = ''
+          linkedin_playbook = ''
+          try:
+              with open(f'{skill_dir}/SKILL.md', 'r') as f:
+                  skill_main = f.read()
+              with open(f'{skill_dir}/references/hook_formulas.md', 'r') as f:
+                  hook_formulas = f.read()
+              with open(f'{skill_dir}/references/linkedin_playbook.md', 'r') as f:
+                  linkedin_playbook = f.read()
+              print(f"Loaded linkedin-post skill from {skill_dir}")
+          except FileNotFoundError as e:
+              print(f"Warning: linkedin-post skill file missing ({e}); proceeding without skill guidance")
+
           # Stop-slop writing guidelines (from https://github.com/hardikpandya/stop-slop)
           # Eliminates predictable AI writing patterns from prose
           with open('config/stop-slop-guidelines.md', 'r') as f:
               stop_slop_guidelines = f.read()
 
-          prompt = f"""你是一位專業的技術作家。請根據以下 Issue 內容，撰寫一篇結構完整、適合發佈於 LinkedIn 的繁體中文技術文章。
+          prompt = f"""你正在執行本專案 `.claude/skills/linkedin-post` skill 的 **G1 階段（把 issue 變 LinkedIn 貼文）**。請完整遵守下列 skill 內容、Hook 公式庫、Playbook 與反 AI 味規則。
+
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ## 📘 Skill 主檔（SKILL.md）
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+          {skill_main}
+
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ## 🎯 Hook 公式庫（references/hook_formulas.md）
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+          {hook_formulas}
+
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ## 📐 LinkedIn Playbook（references/linkedin_playbook.md）
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+          {linkedin_playbook}
+
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ## ✂️ 反 AI 味通用規則（config/stop-slop-guidelines.md）
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
           {stop_slop_guidelines}
 
-          Issue 內容:
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ## 📝 來源 Issue 內容
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
           {content}
 
-          請撰寫一篇詳細的技術文章，需要符合以下要求:
-          1. 有吸引人的標題
-          2. 包含引言
-          3. 清楚解釋技術問題或主題
-          4. 提供解決方案、程式碼範例或見解
-          5. 包含結論
-          6. 使用 Markdown 格式
-          7. **全文必須使用繁體中文撰寫**
-          8. **例外：專有名詞（如技術術語、產品名稱、程式語言名稱等）可以使用英文**
-          9. **重要：LinkedIn 有 {LINKEDIN_CHAR_LIMIT} 字元限制，如果內容會超過此限制，請將文章拆分成多篇貼文，每篇貼文以「{SPLIT_MARKER}」分隔，並在每篇貼文開頭標註「(第 X 篇/共 Y 篇)」**
-          10. **重要：每篇文章的最後一行必須加上「🤖 本文為 AI 產生的貼文」作為聲明**
-          11. **最重要：嚴格遵守上述寫作風格規則，消除所有 AI 寫作痕跡，讓文章讀起來自然、直接、像真人寫的**
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ## 🎬 你的任務
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-          請確保內容專業且具有資訊價值。"""
+          按 SKILL.md 「📋 生成流程（G1）」的 7 個步驟產生一篇 LinkedIn 技術貼文：
+
+          1. 從 issue 抓 1 個最有張力的 angle（不是把整個 issue 翻寫）
+          2. 對照 hook_formulas.md 的「Hook 選擇對照表」挑 1 個公式（H1-H8），按 issue 性質配對
+          3. 依 linkedin_playbook.md「排版規則」寫 4-6 段繁中正文，每段 1-3 句
+          4. 結尾依「留言誘因設計」寫一個開放式問題
+          5. 放 3-5 個 hashtag（最末段同一行）
+          6. 最後一行加上「🤖 本文為 AI 產生的貼文」
+          7. 跑完 SKILL.md「✅ Self-check 清單」全項才輸出
+
+          **輸出硬規則**：
+          - 全文繁體中文，專有名詞用英文
+          - 字數 700-1300 繁中（單篇 sweet spot）
+          - 若內容必須拆 → 用「{SPLIT_MARKER}」分隔，每篇開頭標「(第 X 篇/共 Y 篇)」，每篇 < {LINKEDIN_CHAR_LIMIT} 字元
+          - **不要輸出 YAML frontmatter**（status / published_url 等由 workflow 處理）
+          - **不要輸出任何說明、解釋、自我評論**，只輸出貼文本體
+          - **不在正文嵌入外部連結**（依 SKILL.md 硬規則 5，連結請放文末「來源見留言」字樣或省略）
+          """
 
           try:
               response = client.chat.completions.create(
-                  model="gpt-4",
+                  model="gpt-4-turbo",
                   messages=[
-                      {"role": "system", "content": "你是一位專業的技術作家，專門撰寫繁體中文的技術部落格文章。專有名詞可以使用英文。你的寫作風格必須自然、直接、具體，像真人寫的文章。絕對不要使用典型的 AI 寫作模式：不要用填充詞句、不要用二元對比結構、不要用被動語態、不要用模糊宣言、不要用戲劇化片段、不要用修辭鋪墊。每個句子都要有明確的人做主語，使用主動語態，具體而非抽象。信任讀者的智慧，不要解釋顯而易見的事情。"},
+                      {"role": "system", "content": "你是 tech-post 專案的 LinkedIn 貼文生成器，執行 .claude/skills/linkedin-post skill 的 G1 階段。一律繁體中文（專有名詞英文）。嚴格遵守 user message 內附的 SKILL.md、hook_formulas.md、linkedin_playbook.md、stop-slop-guidelines.md 全部規則。只輸出貼文本體，不輸出 frontmatter、不輸出解釋、不自我引用、不加開場白。"},
                       {"role": "user", "content": prompt}
                   ],
                   max_tokens=4000,
