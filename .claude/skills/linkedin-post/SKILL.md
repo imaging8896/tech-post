@@ -7,6 +7,14 @@ description: 為 tech-post 專案產生／改寫具吸引力的 LinkedIn 技術�
 
 協助 tech-post 專案產生 / 改寫 LinkedIn 技術貼文。LinkedIn 是專業 B2B 平台，演算法、文化、長度限制都跟 FB / Threads 不同 — 本 skill 專為這個情境設計。
 
+## 👥 受眾與定位（所有階段都先讀這段）
+
+- **發佈位置**：作者的 LinkedIn 個人頁面
+- **目標讀者**：台灣的工程師、tech lead、用人主管、科技公司決策者
+- **貼文目的**：展現作者在 AI 與軟體工程上的專業判斷力，建立個人品牌，吸引台灣公司注意
+- **怎麼寫才算專業**：寫出 trade-off（為什麼選 A 不選 B）、踩雷的技術原因、第一手的具體數據 — 不是堆砌名詞或轉述新聞
+- **在地化**：用語、舉例、情境一律以台灣讀者為準。用語遵守 `config/stop-slop-guidelines.md` 的「台灣用語規範」；舉例優先用台灣讀者熟悉的場景
+
 ## 階段路由
 
 | 觸發 | 階段 | 讀 |
@@ -32,6 +40,7 @@ description: 為 tech-post 專案產生／改寫具吸引力的 LinkedIn 技術�
 4. **絕不刪除 `🤖 本文為 AI 產生的貼文` 標記**（誠信標示）
 5. **絕不在正文嵌入未經使用者確認的外部連結**（LinkedIn 對含外連的貼文降觸及，連結放留言區或文末註明）
 6. **絕不模擬實際發文操作**（這個專案靠 GitHub Actions + LinkedIn API 自動發，本 skill 只產內容）
+7. **絕不編造 issue 裡沒有的數字、經驗、人名、場景**（讀者是台灣工程圈，假數據被抓到一次，專業可信度就毀了；素材不足就告知使用者補素材，不要硬擴寫）
 
 ## ❌ 不要做
 
@@ -43,6 +52,7 @@ description: 為 tech-post 專案產生／改寫具吸引力的 LinkedIn 技術�
 - 加多餘 hashtag（3-5 個夠了，且放最末段）
 - 用 emoji 灌水段首（一篇最多 2-3 個有意義的 emoji）
 - 在正文做總結性收尾（「希望這篇對你有幫助」這類自我引用直接刪）
+- 連續幾篇用同一個 hook 公式或同一種收尾方式（單篇看不出來，連看 3 篇就是模板感 = AI 味；動筆前掃最近 3 篇 posts 用過的 hook 與收尾，刻意錯開，見 `references/linkedin_playbook.md`「結構變化」）
 
 ## 🎯 LinkedIn Viral 5 條件（核心，必背）
 
@@ -54,7 +64,7 @@ description: 為 tech-post 專案產生／改寫具吸引力的 LinkedIn 技術�
 
 1. **前 2 行 hook**：LinkedIn 在第 3 行就 truncate「...see more」，前 2 行決定點擊率
 2. **1 個核心 insight**：一篇只講一件事，不要把 issue 裡所有觀點全塞
-3. **我的具體經驗**：作者第一人稱 + 具體場景 / 數字 / 工具名（沒有經驗就用 issue 裡的「我看到 / 我試過」線索擴寫）
+3. **我的具體經驗**：作者第一人稱 + 具體場景 / 數字 / 工具名（只能用 issue 裡實際存在的「我看到 / 我試過」素材改寫表達，不得新增 issue 沒有的數字或事實 — 見硬規則 7）
 4. **留言誘因**：結尾問題要開放（不是 yes/no）、跟讀者經驗有關、3 秒能想到答案
 5. **易讀排版**：每段 1-3 句、段與段空一行、列點不超 5 項
 
@@ -84,6 +94,9 @@ description: 為 tech-post 專案產生／改寫具吸引力的 LinkedIn 技術�
 - [ ] 沒有「綜上所述 / 總的來說 / 首先 / 另一方面 / 不可忽視 / 深入探討」？
 - [ ] 沒有「不是 X 而是 Y」「X 不是問題，Y 才是」公式？
 - [ ] 字數 700-1300 繁中之間？
+- [ ] 沒有中國用語？（對照 stop-slop「台灣用語規範」）
+- [ ] 所有數字、經驗、場景都能在 issue 裡找到出處？（硬規則 7）
+- [ ] hook 公式與收尾方式跟最近 3 篇 posts 錯開？
 - [ ] frontmatter 完整且未被動到 status / published_url 欄位？
 
 任一沒過 = 改完再交。
@@ -99,9 +112,9 @@ description: 為 tech-post 專案產生／改寫具吸引力的 LinkedIn 技術�
 
 ## 🔄 與本專案自動化的協作邊界
 
-- 本 skill **不取代** `.github/workflows/capture-issue.yml` 的自動生成 — 那是 issue 一建立就跑的 GPT-4 baseline
+- 本 skill **不取代** `.github/workflows/capture-issue.yml` 的自動生成 — 那是 issue 一建立就跑的 GPT-4o baseline
 - 本 skill 用在「baseline 生完不滿意，我想手動把它寫得更好」的場景
-- 改寫後直接 commit 到 `posts/` 即可，下一輪 `publish-posts.yml`（每天 9 AM UTC）會撿走發布
+- 改寫後直接 commit 到 `posts/` 即可，下一輪 `publish-posts.yml`（每天台灣時間 9 AM = 1 AM UTC）會撿走發布
 - **不要動已 `status: published` 的貼文內文**（已上 LinkedIn 了，改了也沒用反而失同步）— 除非使用者明確說要改
 
 ## 📌 快速查詢

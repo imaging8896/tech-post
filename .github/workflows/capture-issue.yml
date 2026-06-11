@@ -101,6 +101,7 @@ jobs:
           python3 << 'PYTHON_SCRIPT'
           import os
           import re
+          import glob
           from datetime import datetime
 
           # Check for OpenAI API key
@@ -183,6 +184,24 @@ jobs:
           LINKEDIN_CHAR_LIMIT = 3000
           SPLIT_MARKER = '---SPLIT---'
 
+          # Collect the opening lines of the 3 most recent posts so the model
+          # can avoid repeating the same hook formula / structure (template
+          # repetition across posts is itself an AI tell)
+          def post_date_key(path):
+              m = re.search(r'-(\d{8})', path)
+              return m.group(1) if m else '00000000'
+
+          recent_hooks = []
+          for p in sorted(glob.glob('posts/post-*.md'), key=post_date_key)[-3:]:
+              with open(p, 'r') as f:
+                  c = f.read()
+              body = c.split('---', 2)[2] if c.startswith('---') else c
+              lines = [l for l in body.strip().splitlines() if l.strip()]
+              if lines:
+                  recent_hooks.append(f"《{os.path.basename(p)}》開頭：\n" + "\n".join(lines[:2]))
+
+          recent_hooks_text = "\n\n".join(recent_hooks) if recent_hooks else "（目前沒有歷史貼文，不受輪替限制）"
+
           # Load LinkedIn post skill (.claude/skills/linkedin-post/)
           # The skill is the source of truth for how to write LinkedIn posts.
           # If skill files are missing, fall back to stop-slop-only behaviour.
@@ -239,6 +258,14 @@ jobs:
           {content}
 
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ## 🔁 最近 3 篇貼文的開頭（hook / 結構輪替用）
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+          {recent_hooks_text}
+
+          新貼文的 hook 公式與收尾方式必須跟上面這些錯開（hook_formulas.md「輪替規則」+ linkedin_playbook.md「結構變化」）。
+
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           ## 🎬 你的任務
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -254,6 +281,8 @@ jobs:
 
           **輸出硬規則**：
           - 全文繁體中文，專有名詞用英文
+          - 受眾是台灣的工程師與科技公司：用語、舉例一律以台灣為準，禁止中國用語（見 stop-slop「台灣用語規範」）
+          - 絕不編造 issue 裡沒有的數字、經驗、人名、場景（SKILL.md 硬規則 7；issue 沒寫的就不要寫）
           - 字數 700-1300 繁中（單篇 sweet spot）
           - 若內容必須拆 → 用「{SPLIT_MARKER}」分隔，每篇開頭標「(第 X 篇/共 Y 篇)」，每篇 < {LINKEDIN_CHAR_LIMIT} 字元
           - **不要輸出 YAML frontmatter**（status / published_url 等由 workflow 處理）
@@ -263,9 +292,9 @@ jobs:
 
           try:
               response = client.chat.completions.create(
-                  model="gpt-4-turbo",
+                  model="gpt-4o",
                   messages=[
-                      {"role": "system", "content": "你是 tech-post 專案的 LinkedIn 貼文生成器，執行 .claude/skills/linkedin-post skill 的 G1 階段。一律繁體中文（專有名詞英文）。嚴格遵守 user message 內附的 SKILL.md、hook_formulas.md、linkedin_playbook.md、stop-slop-guidelines.md 全部規則。只輸出貼文本體，不輸出 frontmatter、不輸出解釋、不自我引用、不加開場白。"},
+                      {"role": "system", "content": "你是 tech-post 專案的 LinkedIn 貼文生成器，執行 .claude/skills/linkedin-post skill 的 G1 階段。受眾是台灣的工程師與科技公司，一律繁體中文與台灣慣用語（專有名詞英文，禁止中國用語）。嚴格遵守 user message 內附的 SKILL.md、hook_formulas.md、linkedin_playbook.md、stop-slop-guidelines.md 全部規則。絕不編造 issue 裡沒有的數字或經驗。只輸出貼文本體，不輸出 frontmatter、不輸出解釋、不自我引用、不加開場白。"},
                       {"role": "user", "content": prompt}
                   ],
                   max_tokens=4000,
