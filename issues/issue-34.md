@@ -1,0 +1,36 @@
+---
+issue_number: 34
+title: "那些想要Agentic的公司"
+author: imaging8896
+created_at: 2026-07-10T03:46:37Z
+status: generated
+---
+
+# 那些想要Agentic的公司
+
+**Issue #34**
+**Author:** imaging8896
+**Created:** 2026-07-10T03:46:37Z
+
+## Description
+
+聽說很多公司都想要「agentic」，但公司給的是訂閱制的個人使用量，那問題是公用每日跑的流程，如果要使用AI用量要消耗誰的？
+
+### 個人AI用量耗盡
+這意味著你得回到手動，效率下降，加班，績效衰退，不可能拿出來用於公用的 agentic 貢獻給整個公司。
+
+### 個人AI用量上限
+通常是每月有上限
+
+這時入門AI使用者可能一個誤用就耗盡，於是摸索有限，最終停留在AI的一些工作上的小工具，像是分析log、寫程式...
+
+私底下建立過自己 agentic 的工程師則是發現，要是我建立的流程解決了一整個部門出版和測試的問題，這一點訂閱的用量根本不夠，跟公司申請...
+
+<img width="2400" height="1080" alt="Image" src="https://github.com/user-attachments/assets/0eb13f71-f9d6-439f-8958-3b73be59803d" />
+
+於是自己有一個私人的 agentic，讓自己輕鬆完成工作即可。
+
+### 結果
+* 公司效率，有變好但不多
+* Agentic ，有一些
+* 懂得 agentic 的人才，不可能培養出
